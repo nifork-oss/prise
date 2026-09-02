@@ -43,18 +43,29 @@
         .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
         .btn-delete-item:hover { background: #bd2130; }
 
-        .action-btns { margin-top: 15px; }
+        .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
         .btn-primary { background: #007bff; color: white; }
         .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-danger:hover { background: #bd2130; }
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        #pdfInvoice { display: none; }
-        .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
+        /* Модальное окно предпросмотра PDF */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 5px 25px rgba(0,0,0,0.3); }
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 16px; color: #333; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+
+        /* Фиксированный контейнер для снимка PDF (вынесен за экран) */
+        .pdf-offscreen { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial, sans-serif; color: #333; }
         .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
         .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -90,13 +101,28 @@
     </div>
 
     <div class="action-btns">
-        <button class="btn btn-primary" onclick="sharePDFInvoice()">📤 Отправить счет в PDF</button>
-        <button class="btn btn-danger" onclick="resetAll()" style="margin-top: 10px;">❌ Очистить всё</button>
+        <button class="btn btn-primary" onclick="openPdfPreview()">👁 Предпросмотр счета (PDF)</button>
+        <button class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
     </div>
 </div>
 
-<!-- Скрытый шаблон генерации PDF Счёта -->
-<div id="pdfInvoice" class="pdf-template">
+<!-- Модальное окно предпросмотра -->
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>👁 Предпросмотр документа</h3>
+            <button class="modal-close" onclick="closePdfPreview()">✕</button>
+        </div>
+        <div class="modal-body" id="pdfPreviewContainer"></div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="sharePDFInvoice()">📤 Поделиться / Скачать PDF</button>
+            <button class="btn btn-danger" onclick="closePdfPreview()" style="width: 100px;">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- Шаблон счета (позиционирован вне экрана) -->
+<div id="pdfInvoice" class="pdf-offscreen">
     <div class="pdf-header">
         <div>
             <div class="pdf-title">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
@@ -262,17 +288,10 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function resetAll() {
-        document.getElementById('clientName').value = '';
-        document.getElementById('objectAddress').value = '';
-        invoiceCart = [];
-        renderServices();
-    }
-
-    async function sharePDFInvoice() {
+    function preparePdfData() {
         if (invoiceCart.length === 0) {
             alert("Добавьте хотя бы одну услугу в счёт!");
-            return;
+            return false;
         }
 
         const clientName = document.getElementById('clientName').value.trim();
@@ -303,37 +322,60 @@
             ${objectAddress ? `<b>Адрес объекта:</b> ${objectAddress}` : ''}
         `;
         document.getElementById('pdfTotalSum').innerText = total.toLocaleString('ru-RU');
+        return true;
+    }
+
+    function openPdfPreview() {
+        if (!preparePdfData()) return;
+        
+        const templateHTML = document.getElementById('pdfInvoice').innerHTML;
+        document.getElementById('pdfPreviewContainer').innerHTML = templateHTML;
+        document.getElementById('pdfModal').style.display = 'flex';
+    }
+
+    function closePdfPreview() {
+        document.getElementById('pdfModal').style.display = 'none';
+    }
+
+    async function sharePDFInvoice() {
+        if (!preparePdfData()) return;
 
         const element = document.getElementById('pdfInvoice');
-        element.style.display = 'block';
 
         const opt = {
             margin:       10,
             filename:     'Счет_на_оплату.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        element.style.display = 'none';
+        try {
+            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+            const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
 
-        const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
                     title: 'Счет на оплату',
                     text: 'Направляю счет на оплату в формате PDF.'
                 });
-            } catch (err) {}
-        } else {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(pdfBlob);
-            link.download = 'Счет_на_оплату.pdf';
-            link.click();
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = 'Счет_на_оплату.pdf';
+                link.click();
+            }
+        } catch (err) {
+            alert("Ошибка при генерации PDF документа.");
         }
+    }
+
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        invoiceCart = [];
+        renderServices();
     }
 
     loadServicesFromCloud();
