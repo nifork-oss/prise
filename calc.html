@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
-    <!-- Подключаем библиотеку для идеального формирования PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
@@ -52,18 +50,19 @@
         .tab-btn { flex: 1; padding: 10px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
         .tab-btn.active { background: #007bff; color: white; }
 
-        .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
+        .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; position: relative; }
         .history-card b { color: #007bff; }
+        .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        /* Скрытый шаблон для генерации PDF в высоком качестве */
-        .pdf-template-wrapper { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial, sans-serif; color: #333; }
-        .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
-        .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
-        .pdf-table th { background-color: #f2f2f2; }
+        /* Стили для печати/сохранения в PDF через Chrome */
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: #fff; }
+        }
+        #printArea { display: none; }
     </style>
 </head>
 <body>
@@ -116,8 +115,8 @@
         </div>
 
         <div class="action-btns">
-            <button type="button" class="btn btn-success" onclick="generateAndSharePDF()">📄 Скачать / Отправить счёт в PDF</button>
-            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю</button>
+            <button type="button" class="btn btn-success" onclick="triggerChromePrintPDF()">📄 Сохранить в PDF / Отправить</button>
+            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
     </div>
@@ -129,30 +128,25 @@
     </div>
 </div>
 
-<!-- ШАБЛОН PDF ДЛЯ ГЕНЕРАЦИИ -->
-<div id="pdfInvoiceTemplate" class="pdf-template-wrapper">
-    <div class="pdf-header">
-        <div>
-            <div class="pdf-title">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
-            <div id="pdfDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
-        </div>
-    </div>
-    <div id="pdfClientDetails" style="font-size: 13px; margin-bottom: 15px;"></div>
-    <table class="pdf-table">
+<!-- ЗОНА ДЛЯ ПЕЧАТИ В PDF -->
+<div id="printArea">
+    <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+    <p><b>Дата:</b> <span id="printDate"></span></p>
+    <p id="printClient" style="margin: 4px 0;"></p>
+    <p id="printAddress" style="margin: 4px 0;"></p>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
         <thead>
-            <tr>
-                <th>Наименование работы / услуги</th>
-                <th>Кол-во</th>
-                <th>Ед.</th>
-                <th>Цена</th>
-                <th>Сумма</th>
+            <tr style="background-color: #f2f2f2;">
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
             </tr>
         </thead>
-        <tbody id="pdfTableBody"></tbody>
+        <tbody id="printTableBody"></tbody>
     </table>
-    <div style="text-align: right; margin-top: 15px; font-size: 16px; font-weight: bold;">
-        ИТОГО К ОПЛАТЕ: <span id="pdfTotalSum"></span> ₽
-    </div>
+    <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
 </div>
 
 <script>
@@ -324,60 +318,38 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function preparePdfData() {
+    function triggerChromePrintPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
-            return false;
+            return;
         }
+
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
-        const tbody = document.getElementById('pdfTableBody');
-        tbody.innerHTML = '';
-        let total = 0;
 
+        document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
+        
+        const clientEl = document.getElementById('printClient');
+        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
+        clientEl.style.display = client ? 'block' : 'none';
+
+        const addressEl = document.getElementById('printAddress');
+        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
+        addressEl.style.display = address ? 'block' : 'none';
+
+        let rows = '';
+        let total = 0;
         invoiceCart.forEach(item => {
             const sum = item.qty * item.price;
             total += sum;
-            tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.unit}</td><td>${item.price.toLocaleString('ru-RU')} ₽</td><td>${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
         });
 
-        document.getElementById('pdfDate').innerText = `Дата: ${new Date().toLocaleDateString('ru-RU')}`;
-        document.getElementById('pdfClientDetails').innerHTML = `${client ? `<b>Заказчик:</b> ${client}<br>` : ''}${address ? `<b>Адрес объекта:</b> ${address}` : ''}`;
-        document.getElementById('pdfTotalSum').innerText = total.toLocaleString('ru-RU');
-        return true;
-    }
+        document.getElementById('printTableBody').innerHTML = rows;
+        document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
-    async function generateAndSharePDF() {
-        if (!preparePdfData()) return;
-
-        const element = document.getElementById('pdfInvoiceTemplate');
-        const opt = {
-            margin: 10,
-            filename: 'Счет_на_оплату.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        try {
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Счет на оплату',
-                    text: 'Направляю смету / счет на оплату услуг.'
-                });
-            } else {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(pdfBlob);
-                link.download = 'Счет_на_оплату.pdf';
-                link.click();
-            }
-        } catch (e) {
-            alert("Не удалось сформировать PDF. Проверьте соединение.");
-        }
+        // Вызываем системную печать Chrome (в меню принтера выбирается "Сохранить как PDF")
+        window.print();
     }
 
     async function saveInvoiceToHistory() {
@@ -404,6 +376,7 @@
         cloudData.history.unshift(newRecord);
         await saveCloudData();
         alert("Счет успешно сохранен в историю!");
+        renderHistory();
     }
 
     function renderHistory() {
@@ -413,7 +386,6 @@
 
         let records = cloudData.history || [];
         
-        // Обычный мастер видит только свои счета, админ — все
         if (currentUser !== 'admin') {
             records = records.filter(r => r.author === currentUser);
         }
@@ -423,8 +395,23 @@
             return;
         }
 
-        records.forEach(rec => {
+        records.forEach((rec) => {
             let itemsHtml = rec.items.map(i => `• ${i.name} (${i.qty} ${i.unit}) — ${i.qty * i.price} ₽`).join('<br>');
             list.innerHTML += `
                 <div class="history-card">
-                    <b>📅 ${rec.date}</b> ${currentUser === 'admin' ? `(Мастер: <u>${rec.author}</u>)` :
+                    <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    <b>📅 ${rec.date}</b> ${currentUser === 'admin' ? `(Мастер: <u>${rec.author}</u>)` : ''}<br>
+                    👤 <b>Заказчик:</b> ${rec.client}<br>
+                    📍 <b>Адрес:</b> ${rec.address}<br>
+                    <div style="margin: 6px 0; border-top: 1px dashed #ddd; padding-top: 4px; padding-right: 50px;">${itemsHtml}</div>
+                    <b>Итого: ${Number(rec.total).toLocaleString('ru-RU')} ₽</b>
+                </div>
+            `;
+        });
+    }
+
+    async function deleteHistoryRecord(id) {
+        if (!confirm("Удалить этот счёт из истории?")) return;
+        
+        cloudData.history = cloudData.history.filter(r => r.id !== id);
+        await saveCloudDat
