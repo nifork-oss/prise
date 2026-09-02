@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система выставления счетов - Отделочные работы</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #333; line-height: 1.4; }
+        .container { max-width: 100%; margin: 0 auto; background: white; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 20px 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        .header h1 { font-size: 1.4em; margin-bottom: 4px; font-weight: 600; }
+        .header .subtitle { font-size: 0.9em; opacity: 0.85; }
+        .main-content { display: flex; flex-direction: column; padding: 0; }
+        .services-column { padding: 15px; }
+        .client-info { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e1e8ed; }
+        .client-info h3 { margin-bottom: 12px; color: #2c3e50; font-size: 1.1em; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 4px; font-weight: 600; color: #2c3e50; font-size: 13px; }
+        input, select { width: 100%; padding: 10px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; background: white; }
+        .mobile-category { background: white; border-radius: 10px; margin-bottom: 12px; border: 1px solid #e1e8ed; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .mobile-category-header { background: #3498db; color: white; padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        .items-count { background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }
+        .mobile-category-content { display: none; padding: 8px 0; background: #fafbfc; }
+        .mobile-category-content.active { display: block; }
+        .service-card { background: white; margin: 8px 10px; padding: 12px; border-radius: 8px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .service-card.special { border-left-color: #f39c12; }
+        .service-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600; }
+        .service-price { color: #27ae60; white-space: nowrap; }
+        .service-description { color: #7f8c8d; font-size: 0.85em; margin-bottom: 10px; }
+        .service-controls { display: flex; gap: 6px; align-items: center; }
+        .service-controls input { text-align: center; }
+        .add-btn { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; flex-shrink: 0; }
+        .add-btn.added { background: #2980b9; }
+        .invoice-preview { background: #f8f9fa; padding: 15px; border-top: 2px solid #e1e8ed; }
+        .invoice-header { text-align: center; margin-bottom: 15px; }
+        .invoice-client { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; border: 1px solid #e1e8ed; }
+        .invoice-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 6px; border-radius: 6px; border: 1px solid #e1e8ed; font-size: 13px; }
+        .remove-btn { background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; }
+        .invoice-total { background: #27ae60; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; margin: 15px 0; }
+        .invoice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; font-size: 12px; text-align: center; }
+        .btn-primary { background: #3498db; }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+        .btn-warning { background: #f39c12; }
+        .empty-cart { text-align: center; padding: 20px; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 Система счетов</h1>
+            <div class="subtitle">Отделочные работы</div>
+        </div>
+
+        <div class="main-content">
+            <div class="services-column">
+                <div class="client-info">
+                    <h3>📋 Информация о заказе</h3>
+                    <div class="form-group">
+                        <label>ФИО заказчика:</label>
+                        <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес объекта:</label>
+                        <input type="text" id="clientAddress" placeholder="г. Москва, ул. Примерная, д. 1">
+                    </div>
+                    <div class="form-group">
+                        <label>Имя исполнителя:</label>
+                        <input type="text" id="executorName" placeholder="Петров Алексей">
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 12px; color: #2c3e50;">🛠️ Выберите услуги:</h3>
+                <div id="categoriesContainer"></div>
+            </div>
+
+            <div class="invoice-preview">
+                <div class="invoice-header">
+                    <h3>Предпросмотр счета</h3>
+                </div>
+
+                <div class="invoice-client" id="invoiceClientInfo" style="display: none;">
+                    <p><strong>Заказчик:</strong> <span id="previewClientName"></span></p>
+                    <p><strong>Адрес:</strong> <span id="previewClientAddress"></span></p>
+                    <p><strong>Исполнитель:</strong> <span id="previewExecutorName"></span></p>
+                </div>
+
+                <div id="invoiceItems">
+                    <div class="empty-cart">🛒 Добавьте услуги из списка выше</div>
+                </div>
+
+                <div class="invoice-total" id="invoiceTotal" style="display: none;">ИТОГО: 0 ₽</div>
+
+                <div class="invoice-actions">
+                    <button class="btn btn-danger" onclick="clearInvoice()">❌ Очистить</button>
+                    <button class="btn btn-success" onclick="generatePDF()">📄 Скачать PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const priceListData = {
+        "Подготовительные работы": [
+            { id: 1, name: "Монтаж фасадной сетки", price: 500, unit: "м²", description: "Армирование стен фасадной сеткой" },
+            { id: 2, name: "Монтаж стеклохолста", price: 500, unit: "м²", description: "Наклейка стеклохолста на шпаклевку" },
+            { id: 3, name: "Нанесение грунт-краски", price: 200, unit: "м²", description: "Грунт-краска вместо клея" }
+        ],
+        "Шпаклевание и грунтовка": [
+            { id: 4, name: "Финишное шпаклевание", price: 500, unit: "м²", description: "Финишное выравнивание" },
+            { id: 5, name: "Нанесение праймера", price: 300, unit: "м²", description: "Грунтовка перед покраской" }
+        ],
+        "Покраска": [
+            { id: 6, name: "Покраска стен", price: 500, unit: "м²", description: "Покраска в 2 слоя" },
+            { id: 7, name: "Покраска лепнины", price: 500, unit: "м.п.", description: "Покраска плинтусов и молдингов" }
+        ],
+        "Монтаж лепнины": [
+            { id: 8, name: "Монтаж карнизов", price: 500, unit: "м.п.", description: "Установка потолочных карнизов" },
+            { id: 9, name: "Монтаж молдингов", price: 500, unit: "м.п.", description: "Установка декоративных молдингов" }
+        ]
+    };
+
+    let selectedServices = [];
+
+    function render() {
+        const container = document.getElementById('categoriesContainer');
+        container.innerHTML = '';
+
+        Object.keys(priceListData).forEach(category => {
+            const services = priceListData[category];
+            const div = document.createElement('div');
+            div.className = 'mobile-category';
+            div.innerHTML = `
+                <div class="mobile-category-header" onclick="toggleCat('${category}')">
+                    <span>${category}</span>
+                    <span class="items-count">${services.length}</span>
+                </div>
+                <div class="mobile-category-content" id="cat-${category}">
+                    ${services.map(s => `
+                        <div class="service-card">
+                            <div class="service-header">
+                                <div>${s.name}</div>
+                                <div class="service-price">${s.price} ₽ / ${s.unit}</div>
+                            </div>
+                            <div class="service-description">${s.description}</div>
+                            <div class="service-controls">
+                                <input type="number" id="qty-${s.id}" placeholder="Кол-во" min="1" style="width: 80px;">
+                                <button class="add-btn" id="btn-${s.id}" onclick="addService(${s.id})">+ Добавить</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function toggleCat(cat) {
+        const el = document.getElementById(`cat-${cat}`);
+        const active = el.classList.contains('active');
+        document.querySelectorAll('.mobile-category-content').forEach(c => c.classList.remove('active'));
+        if (!active) el.classList.add('active');
+    }
+
+    function addService(id) {
+        let item = null;
+        Object.values(priceListData).forEach(arr => {
+            const found = arr.find(x => x.id === id);
+            if (found) item = found;
+        });
+
+        const qtyInput = document.getElementById(`qty-${id}`);
+        const qty = parseFloat(qtyInput.value);
+
+        if (!qty || qty <= 0) {
+            alert('Укажите количество!');
+            return;
+        }
+
+        const total = qty * item.price;
+        const index = selectedServices.findIndex(s => s.id === id);
+
+        if (index > -1) {
+            selectedServices[index] = { ...item, qty, total };
+        } else {
+            selectedServices.push({ ...item, qty, total });
+        }
+
+        document.getElementById(`btn-${id}`).textContent = "✓ В корзине";
+        document.getElementById(`btn-${id}`).classList.add('added');
+        updateInvoice();
+    }
+
+    function removeService(index) {
+        const item = selectedServices[index];
+        selectedServices.splice(index, 1);
+        const btn = document.getElementById(`btn-${item.id}`);
+        if (btn) {
+            btn.textContent = "+ Добавить";
+            btn.classList.remove('added');
+        }
+        updateInvoice();
+    }
+
+    function updateInvoice() {
+        const name = document.getElementById('clientName').value;
+        const addr = document.getElementById('clientAddress').value;
+        const exec = document.getElementById('executorName').value;
+
+        const info = document.getElementById('invoiceClientInfo');
+        if (name || addr || exec) {
+            document.getElementById('previewClientName').textContent = name || '—';
+            document.getElementById('previewClientAddress').textContent = addr || '—';
+            document.getElementById('previewExecutorName').textContent = exec || '—';
+            info.style.display = 'block';
+        } else {
+            info.style.display = 'none';
+        }
+
+        const container = document.getElementById('invoiceItems');
+        if (selectedServices.length === 0) {
+            container.innerHTML = '<div class="empty-cart">🛒 Добавьте услуги из списка выше</div>';
+            document.getElementById('invoiceTotal').style.display = 'none';
+            return;
+        }
+
+        let sum = 0;
+        container.innerHTML = selectedServices.map((s, i) => {
+            sum += s.total;
+            return `
+                <div class="invoice-item">
+                    <div>
+                        <strong>${s.name}</strong><br>
+                        <small>${s.qty} ${s.unit} × ${s.price} ₽</small>
+                    </div>
+                    <div>
+                        <strong>${s.total} ₽</strong>
+                        <button class="remove-btn" onclick="removeService(${i})">✕</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const totalEl = document.getElementById('invoiceTotal');
+        totalEl.textContent = `ИТОГО: ${sum.toLocaleString('ru-RU')} ₽`;
+        totalEl.style.display = 'block';
+    }
+
+    function clearInvoice() {
+        selectedServices = [];
+        document.querySelectorAll('.add-btn').forEach(b => {
+            b.textContent = "+ Добавить";
+            b.classList.remove('added');
+        });
+        document.querySelectorAll('input[type="number"]').forEach(i => i.value = '');
+        updateInvoice();
+    }
+
+    function generatePDF() {
+        window.print();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        localStorage.clear(); // Всегда очищает старые данные при запуске
+        render();
+        ['clientName', 'clientAddress', 'executorName'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateInvoice);
+        });
+    });
+    </script>
+</body>
+</html>
