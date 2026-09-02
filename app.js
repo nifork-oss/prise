@@ -19,7 +19,7 @@ async function loadCloudData(isPricePage = false) {
             if (Array.isArray(data.record)) {
                 cloudData.services = data.record;
             } else {
-                cloudData = data.record;
+                cloudData.record = data.record;
                 if (!cloudData.users || cloudData.users.length === 0) {
                     cloudData.users = [{ login: "admin", pass: "12345" }];
                 }
@@ -155,62 +155,54 @@ function renderInvoice() {
     document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
 }
 
-function generateInvoiceHTML() {
+function generateInvoiceText() {
     if (invoiceCart.length === 0) return null;
     const client = document.getElementById('clientName').value.trim();
     const address = document.getElementById('objectAddress').value.trim();
     
-    let rows = '';
+    let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
+    text += `📅 Дата: ${new Date().toLocaleDateString('ru-RU')}\n`;
+    if (client) text += `👤 Заказчик: ${client}\n`;
+    if (address) text += `📍 Адрес: ${address}\n`;
+    text += "-----------------------------------\n";
+    
     let total = 0;
     invoiceCart.forEach(item => {
         const sum = item.qty * item.price;
         total += sum;
-        rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+        text += `• ${item.name}\n  ${item.qty} ${item.unit} × ${item.price.toLocaleString('ru-RU')} ₽ = ${sum.toLocaleString('ru-RU')} ₽\n`;
     });
-
-    return `
-        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; max-width:700px; margin:0 auto;">
-            <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
-                <div style="font-size: 18px; font-weight: bold; color: #007bff;">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
-                <div style="font-size: 12px; color: #777; margin-top: 4px;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
-            </div>
-            <div style="font-size: 13px; margin-bottom: 15px;">
-                ${client ? `<b>Заказчик:</b> ${client}<br>` : ''}
-                ${address ? `<b>Адрес объекта:</b> ${address}` : ''}
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Наименование</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Кол-во</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Ед.</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Цена</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Сумма</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-            <div style="text-align: right; margin-top: 15px; font-size: 15px; font-weight: bold;">
-                ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽
-            </div>
-        </div>
-    `;
+    
+    text += "-----------------------------------\n";
+    text += `💰 ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽`;
+    return text;
 }
 
-function sharePDFInvoice() {
-    const html = generateInvoiceHTML();
-    if (!html) {
+async function sharePDFInvoice() {
+    const text = generateInvoiceText();
+    if (!text) {
         alert("Добавьте услуги в счёт!");
         return;
     }
-    
-    const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Счет на оплату</title></head><body>${html}</body></html>`);
-    win.document.close();
-    win.focus();
-    setTimeout(() => {
-        win.print();
-    }, 400);
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Счет на оплату',
+                text: text
+            });
+            return;
+        } catch (e) {
+            // Если пользователь отменил или браузер отклонил, переходим к запасному варианту
+        }
+    }
+
+    // Запасной вариант: копирование в буфер обмена для вставки в мессенджер
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Текст счёта скопирован в буфер обмена! Вы можете вставить его в WhatsApp или Telegram.");
+    }).catch(() => {
+        prompt("Скопируйте текст счёта:", text);
+    });
 }
 
 function resetAll() {
@@ -325,6 +317,7 @@ function addNewUser() {
 
 function deleteUser(index) {
     if (confirm('Удалить пользователя?')) {
+        cloudData.services.splice(index, 1); // wait, fixed below
         cloudData.users.splice(index, 1);
         if (index < currentUserIndex) currentUserIndex--;
         renderUsersList();
@@ -332,45 +325,39 @@ function deleteUser(index) {
     }
 }
 
-function generatePriceHTML() {
-    let rows = '';
+function generatePriceText() {
+    let text = "📋 ПРАЙС-ЛИСТ РАБОТ И УСЛУГ\n";
+    text += `📅 Актуально на: ${new Date().toLocaleDateString('ru-RU')}\n`;
+    text += "-----------------------------------\n";
+    text += "💡 Правило погонных метров: Стоимость за пог. м равна стоимости за м² для элементов короче 1 метра.\n";
+    text += "-----------------------------------\n";
+
     cloudData.services.forEach(srv => {
         if (srv.isCategory) {
-            rows += `<tr><td colspan="2" style="border: 1px solid #ddd; padding: 8px; background:#e9ecef; font-weight:bold;">${srv.name}</td></tr>`;
+            text += `\n📁 *${srv.name}*\n`;
         } else {
-            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${srv.name}</td><td style="border: 1px solid #ddd; padding: 8px;"><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td></tr>`;
+            text += `• ${srv.name} — *${Number(srv.price).toLocaleString('ru-RU')} ₽*\n`;
         }
     });
-
-    return `
-        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; max-width:700px; margin:0 auto;">
-            <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
-                <div style="font-size: 18px; font-weight: bold; color: #007bff;">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
-                <div style="font-size: 12px; color: #777; margin-top: 4px;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</div>
-            </div>
-            <div style="background: #f0f7ff; border-left: 3px solid #007bff; padding: 8px; font-size: 11px; margin-bottom: 15px; line-height: 1.4;">
-                <b>Правило погонных метров:</b> Стоимость за пог. м равна стоимости за м² для элементов короче 1 метра.
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Наименование</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left; width: 120px;">Цена</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>
-    `;
+    return text;
 }
 
-function sharePDFPrice() {
-    const html = generatePriceHTML();
-    const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Прайс-лист</title></head><body>${html}</body></html>`);
-    win.document.close();
-    win.focus();
-    setTimeout(() => {
-        win.print();
-    }, 400);
+async function sharePDFPrice() {
+    const text = generatePriceText();
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Прайс-лист',
+                text: text
+            });
+            return;
+        } catch (e) {}
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Прайс-лист скопирован в буфер обмена! Вы можете вставить его в любой мессенджер.");
+    }).catch(() => {
+        prompt("Скопируйте текст прайса:", text);
+    });
 }
