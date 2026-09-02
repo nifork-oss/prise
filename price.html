@@ -21,9 +21,13 @@
         .category-item { background: #e9ecef; font-weight: bold; font-size: 15px; margin-top: 15px; }
 
         .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
-        .btn-success { background: #28a745; color: white; margin-bottom: 15px; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
         .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
         .btn-danger { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; width: auto; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
 
         .edit-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
         .auth-box { max-width: 300px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
@@ -42,8 +46,17 @@
         .user-name { font-weight: 600; font-size: 14px; }
         .user-tag { font-size: 11px; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
 
-        #pdfPrice { display: none; }
-        .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
+        /* Модальное окно предпросмотра PDF */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 5px 25px rgba(0,0,0,0.3); }
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 16px; color: #333; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+
+        /* Фиксированный контейнер для снимка PDF (вынесен за экран) */
+        .pdf-offscreen { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial, sans-serif; color: #333; }
         .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
         .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
         .pdf-info-box { background: #f0f7ff; border-left: 3px solid #007bff; padding: 8px 12px; font-size: 11px; margin-bottom: 15px; color: #333; line-height: 1.4; }
@@ -58,7 +71,10 @@
     <a href="index.html" class="nav-btn">⬅ Назад к калькулятору</a>
     <h1>📋 Прайс-лист работ и услуг</h1>
 
-    <button class="btn btn-success" onclick="sharePDFPrice()">📋 Отправить актуальный прайс (PDF)</button>
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="openPdfPreview()">👁 Предпросмотр прайс-листа (PDF)</button>
+        <button class="btn btn-success" onclick="sharePDFPrice()">📤 Поделиться / Скачать прайс (PDF)</button>
+    </div>
 
     <!-- Пояснительный блок -->
     <div class="info-box">
@@ -135,8 +151,23 @@
     </div>
 </div>
 
-<!-- Шаблон генерации PDF документов -->
-<div id="pdfPrice" class="pdf-template">
+<!-- Модальное окно предпросмотра -->
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>👁 Предпросмотр прайс-листа</h3>
+            <button class="modal-close" onclick="closePdfPreview()">✕</button>
+        </div>
+        <div class="modal-body" id="pdfPreviewContainer"></div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="sharePDFPrice()">📤 Поделиться / Скачать PDF</button>
+            <button class="btn btn-danger" onclick="closePdfPreview()" style="width: 100px;">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- Шаблон PDF прайс-листа (позиционирован вне экрана) -->
+<div id="pdfPrice" class="pdf-offscreen">
     <div class="pdf-header">
         <div class="pdf-title">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
         <div id="pdfPriceDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
@@ -378,7 +409,7 @@
         }
     }
 
-    async function sharePDFPrice() {
+    function preparePdfData() {
         const pdfPriceTableBody = document.getElementById('pdfPriceTableBody');
         pdfPriceTableBody.innerHTML = '';
 
@@ -396,36 +427,50 @@
         });
 
         document.getElementById('pdfPriceDate').innerText = `Актуально на: ${new Date().toLocaleDateString('ru-RU')}`;
+    }
+
+    function openPdfPreview(){
+        preparePdfData();
+        const templateHTML = document.getElementById('pdfPrice').innerHTML;
+        document.getElementById('pdfPreviewContainer').innerHTML = templateHTML;
+        document.getElementById('pdfModal').style.display = 'flex';
+    }
+
+    function closePdfPreview() {
+        document.getElementById('pdfModal').style.display = 'none';
+    }
+
+    async function sharePDFPrice() {
+        preparePdfData();
 
         const element = document.getElementById('pdfPrice');
-        element.style.display = 'block';
 
         const opt = {
             margin:       10,
             filename:     'Прайс_лист.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        element.style.display = 'none';
+        try {
+            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+            const file = new File([pdfBlob], 'Прайс_лист.pdf', { type: 'application/pdf' });
 
-        const file = new File([pdfBlob], 'Прайс_лист.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
                     title: 'Прайс-лист',
                     text: 'Актуальный прайс-лист работ и услуг.'
                 });
-            } catch (err) {}
-        } else {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(pdfBlob);
-            link.download = 'Прайс_лист.pdf';
-            link.click();
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = 'Прайс_лист.pdf';
+                link.click();
+            }
+        } catch (err) {
+            alert("Ошибка при генерации PDF документа.");
         }
     }
 
