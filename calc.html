@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -58,12 +58,7 @@
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: #fff; }
-        }
-        #printArea { display: none; }
+        #printArea { display: none; background: #fff; padding: 20px; }
     </style>
 </head>
 <body>
@@ -79,6 +74,7 @@
         <div id="authError" style="color:red; font-size:12px; margin-top:10px; display:none;">Неверный логин или пароль</div>
     </div>
 </div>
+
 <!-- РАБОЧИЙ КАБИНЕТ -->
 <div id="appScreen" class="container" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -323,40 +319,10 @@
     }
 
     function triggerChromePrintPDF() {
-    if (invoiceCart.length === 0) {
-        alert("Добавьте услуги в счёт!");
-        return;
-    }
-
-    const client = document.getElementById('clientName').value.trim();
-    const address = document.getElementById('objectAddress').value.trim();
-
-    document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
-    
-    const clientEl = document.getElementById('printClient');
-    clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
-    clientEl.style.display = client ? 'block' : 'none';
-
-    const addressEl = document.getElementById('printAddress');
-    addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
-    addressEl.style.display = address ? 'block' : 'none';
-
-    let rows = '';
-    let total = 0;
-    invoiceCart.forEach(item => {
-        const sum = item.qty * item.price;
-        total += sum;
-        rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
-    });
-
-    document.getElementById('printTableBody').innerHTML = rows;
-    document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
-
-    setTimeout(() => {
-        window.print();
-    }, 100);
-}
-
+        if (invoiceCart.length === 0) {
+            alert("Добавьте услуги в счёт!");
+            return;
+        }
 
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
@@ -382,7 +348,20 @@
         document.getElementById('printTableBody').innerHTML = rows;
         document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
-        window.print();
+        const element = document.getElementById('printArea');
+        element.style.display = 'block';
+
+        const opt = {
+            margin:       10,
+            filename:     `Schet_${client || 'zakazchik'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            element.style.display = 'none';
+        });
     }
 
     async function saveInvoiceToHistory() {
