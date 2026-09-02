@@ -56,7 +56,6 @@
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        /* Стили для печати/сохранения в PDF через Chrome */
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
@@ -172,7 +171,9 @@
             const data = await res.json();
             if (data.record) {
                 cloudData = data.record;
-                if (!cloudData.users) cloudData.users = [{ login: "admin", pass: "12345" }];
+                if (!cloudData.users || !Array.isArray(cloudData.users) || cloudData.users.length === 0) {
+                    cloudData.users = [{ login: "admin", pass: "12345" }];
+                }
                 if (!cloudData.history) cloudData.history = [];
             }
             const loader = document.getElementById('loader');
@@ -198,13 +199,17 @@
         }
     }
 
-    function handleLogin() {
+    async function handleLogin() {
         const l = document.getElementById('loginInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
         
+        // Гарантированно подтягиваем актуальные данные перед входом
+        await loadCloudData();
+
         const user = cloudData.users.find(u => u.login === l && u.pass === p);
         if (user) {
             currentUser = user.login;
+            document.getElementById('authError').style.display = 'none';
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = 'block';
             renderHistory();
@@ -348,7 +353,6 @@
         document.getElementById('printTableBody').innerHTML = rows;
         document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
-        // Вызываем системную печать Chrome (в меню принтера выбирается "Сохранить как PDF")
         window.print();
     }
 
@@ -411,7 +415,4 @@
     }
 
     async function deleteHistoryRecord(id) {
-        if (!confirm("Удалить этот счёт из истории?")) return;
-        
-        cloudData.history = cloudData.history.filter(r => r.id !== id);
-        await saveCloudDat
+        if (!confirm("Удалить этот сч
