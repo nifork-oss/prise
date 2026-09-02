@@ -197,23 +197,12 @@ function generateInvoiceHTML() {
     `;
 }
 
-function openPdfPreview() {
+function sharePDFInvoice() {
     const html = generateInvoiceHTML();
     if (!html) {
         alert("Добавьте услуги в счёт!");
         return;
     }
-    document.getElementById('pdfPreviewContainer').innerHTML = html;
-    document.getElementById('pdfModal').style.display = 'flex';
-}
-
-function closePdfPreview() {
-    document.getElementById('pdfModal').style.display = 'none';
-}
-
-function sharePDFInvoice() {
-    const html = generateInvoiceHTML();
-    if (!html) return;
     
     const win = window.open('', '_blank');
     win.document.write(`<html><head><title>Счет на оплату</title></head><body>${html}</body></html>`);
@@ -221,7 +210,7 @@ function sharePDFInvoice() {
     win.focus();
     setTimeout(() => {
         win.print();
-    }, 500);
+    }, 400);
 }
 
 function resetAll() {
@@ -375,12 +364,6 @@ function generatePriceHTML() {
     `;
 }
 
-function openPricePdfPreview() {
-    const html = generatePriceHTML();
-    document.getElementById('pdfPreviewContainer').innerHTML = html;
-    document.getElementById('pdfModal').style.display = 'flex';
-}
-
 function sharePDFPrice() {
     const html = generatePriceHTML();
     const win = window.open('', '_blank');
@@ -389,5 +372,5 @@ function sharePDFPrice() {
     win.focus();
     setTimeout(() => {
         win.print();
-    }, 500);
+    }, 400);
 }
