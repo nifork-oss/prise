@@ -23,22 +23,22 @@
         .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
 
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; }
         .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
         
         .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .unit-row input[type="number"] { width: 100px; padding: 7px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .unit-row select { padding: 7px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
-        .remove-unit-btn { background: #dc3545; color: white; border: none; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
 
-        .add-variant-btn { background: #28a745; color: white; border: none; padding: 10px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; text-align: center; }
+        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; text-align: center; }
+        .add-to-cart-btn:hover { background: #218838; }
 
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
 
         .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
         .invoice-item-info { display: flex; align-items: center; gap: 8px; }
-        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
 
         .action-btns { margin-top: 15px; }
         
@@ -66,11 +66,11 @@
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
-        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoice()">
+        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoiceInfo()">
     </div>
     <div class="form-group">
         <label>Адрес объекта</label>
-        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoice()">
+        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoiceInfo()">
     </div>
 
     <h2>🛠 Выберите услуги:</h2>
@@ -122,7 +122,7 @@
     const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
     let services = [];
-    let selectedVariants = {}; 
+    let invoiceCart = []; 
 
     async function loadServicesFromCloud() {
         try {
@@ -160,116 +160,98 @@
                 catHeader.innerText = srv.name;
                 container.appendChild(catHeader);
             } else {
-                if (!selectedVariants[idx]) {
-                    selectedVariants[idx] = [];
-                }
-
                 const card = document.createElement('div');
                 card.className = 'service-card';
-                card.id = `card_${idx}`;
                 
+                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+
                 card.innerHTML = `
                     <div class="service-title">
                         <span>${srv.name}</span>
                         <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
                     </div>
-                    <div id="unitsContainer_${idx}"></div>
-                    <button class="add-variant-btn" onclick="addVariant(${idx})">➕ Добавить услугу в счёт</button>
+                    <div class="unit-row">
+                        <input type="number" id="input_qty_${idx}" min="0" placeholder="Кол-во" value="1">
+                        <select id="select_unit_${idx}">
+                            ${unitsOptions}
+                        </select>
+                    </div>
+                    <button class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
                 `;
                 container.appendChild(card);
-                renderUnitRows(idx);
             }
         });
 
-        updateInvoice();
+        renderInvoice();
     }
 
-    function renderUnitRows(srvIdx) {
-        const container = document.getElementById(`unitsContainer_${srvIdx}`);
-        if (!container) return;
-        container.innerHTML = '';
+    function addToInvoice(srvIdx) {
+        const qtyInput = document.getElementById(`input_qty_${srvIdx}`);
+        const unitSelect = document.getElementById(`select_unit_${srvIdx}`);
 
-        selectedVariants[srvIdx].forEach((varItem, varIdx) => {
-            const row = document.createElement('div');
-            row.className = 'unit-row';
+        const qty = parseFloat(qtyInput.value);
+        const unit = unitSelect.value;
+        const srv = services[srvIdx];
 
-            let optionsHTML = DEFAULT_UNITS.map(u => `<option value="${u}" ${varItem.unit === u ? 'selected' : ''}>${u}</option>`).join('');
+        if (isNaN(qty) || qty <= 0) {
+            alert('Укажите количество больше нуля!');
+            return;
+        }
 
-            row.innerHTML = `
-                <input type="number" min="0" placeholder="Кол-во" value="${varItem.qty}" oninput="updateQty(${srvIdx}, ${varIdx}, this.value)">
-                <select onchange="updateUnit(${srvIdx}, ${varIdx}, this.value)">
-                    ${optionsHTML}
-                </select>
-                <button class="remove-unit-btn" onclick="removeVariant(${srvIdx}, ${varIdx})" title="Удалить из счёта">✕</button>
-            `;
-            container.appendChild(row);
+        invoiceCart.push({
+            name: srv.name,
+            price: Number(srv.price),
+            qty: qty,
+            unit: unit
         });
+
+        renderInvoice();
     }
 
-    function addVariant(srvIdx) {
-        selectedVariants[srvIdx].push({ qty: '1', unit: DEFAULT_UNITS[0] });
-        renderUnitRows(srvIdx);
-        updateInvoice();
+    function removeFromInvoice(cartIdx) {
+        invoiceCart.splice(cartIdx, 1);
+        renderInvoice();
     }
 
-    function removeVariant(srvIdx, varIdx) {
-        selectedVariants[srvIdx].splice(varIdx, 1);
-        renderUnitRows(srvIdx);
-        updateInvoice();
-    }
-
-    function updateQty(srvIdx, varIdx, val) {
-        selectedVariants[srvIdx][varIdx].qty = val;
-        updateInvoice();
-    }
-
-    function updateUnit(srvIdx, varIdx, val) {
-        selectedVariants[srvIdx][varIdx].unit = val;
-        updateInvoice();
-    }
-
-    function updateInvoice() {
-        const invoiceItems = document.getElementById('invoiceItems');
+    function updateInvoiceInfo() {
         const invoiceInfo = document.getElementById('invoiceInfo');
         const clientName = document.getElementById('clientName').value.trim();
         const objectAddress = document.getElementById('objectAddress').value.trim();
-
-        invoiceItems.innerHTML = '';
-        let total = 0;
-        let hasItems = false;
 
         let infoHTML = '';
         if (clientName) infoHTML += `<b>Заказчик:</b> ${clientName}<br>`;
         if (objectAddress) infoHTML += `<b>Адрес:</b> ${objectAddress}`;
         invoiceInfo.innerHTML = infoHTML;
+    }
 
-        services.forEach((srv, idx) => {
-            if (srv.isCategory || !selectedVariants[idx]) return;
+    function renderInvoice() {
+        const invoiceItems = document.getElementById('invoiceItems');
+        invoiceItems.innerHTML = '';
+        let total = 0;
 
-            selectedVariants[idx].forEach((v, varIdx) => {
-                const qty = parseFloat(v.qty);
-                if (qty > 0) {
-                    hasItems = true;
-                    const itemSum = qty * Number(srv.price);
-                    total += itemSum;
+        updateInvoiceInfo();
 
-                    const itemRow = document.createElement('div');
-                    itemRow.className = 'invoice-item';
-                    itemRow.innerHTML = `
-                        <div class="invoice-item-info">
-                            <button class="btn-delete-item" onclick="removeVariant(${idx}, ${varIdx})" title="Удалить позицию">✕</button>
-                            <span>${srv.name} (${qty} ${v.unit})</span>
-                        </div>
-                        <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
-                    `;
-                    invoiceItems.appendChild(itemRow);
-                }
-            });
-        });
-
-        if (!hasItems) {
-            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Нажмите «➕ Добавить услугу в счёт» напротив нужной работы</div>';
+        if (invoiceCart.length === 0) {
+            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Укажите количество в услугах выше и нажмите «➕ Добавить в счёт»</div>';
+            document.getElementById('totalSum').textContent = '0';
+            return;
         }
+
+        invoiceCart.forEach((item, idx) => {
+            const itemSum = item.qty * item.price;
+            total += itemSum;
+
+            const itemRow = document.createElement('div');
+            itemRow.className = 'invoice-item';
+            itemRow.innerHTML = `
+                <div class="invoice-item-info">
+                    <button class="btn-delete-item" onclick="removeFromInvoice(${idx})" title="Удалить позицию из счёта">✕ Удалить</button>
+                    <span>${item.name} (${item.qty} ${item.unit})</span>
+                </div>
+                <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
+            `;
+            invoiceItems.appendChild(itemRow);
+        });
 
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
@@ -277,46 +259,37 @@
     function resetAll() {
         document.getElementById('clientName').value = '';
         document.getElementById('objectAddress').value = '';
-        selectedVariants = {};
+        invoiceCart = [];
         renderServices();
     }
 
     async function sharePDFInvoice() {
+        if (invoiceCart.length === 0) {
+            alert("Добавьте хотя бы одну услугу в счёт!");
+            return;
+        }
+
         const clientName = document.getElementById('clientName').value.trim();
         const objectAddress = document.getElementById('objectAddress').value.trim();
         const pdfTableBody = document.getElementById('pdfTableBody');
         
         pdfTableBody.innerHTML = '';
         let total = 0;
-        let hasItems = false;
 
-        services.forEach((srv, idx) => {
-            if (srv.isCategory || !selectedVariants[idx]) return;
+        invoiceCart.forEach((item) => {
+            const itemSum = item.qty * item.price;
+            total += itemSum;
 
-            selectedVariants[idx].forEach((v) => {
-                const qty = parseFloat(v.qty);
-                if (qty > 0) {
-                    hasItems = true;
-                    const itemSum = qty * Number(srv.price);
-                    total += itemSum;
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${srv.name}</td>
-                        <td>${qty}</td>
-                        <td>${v.unit}</td>
-                        <td>${Number(srv.price).toLocaleString('ru-RU')} ₽</td>
-                        <td>${itemSum.toLocaleString('ru-RU')} ₽</td>
-                    `;
-                    pdfTableBody.appendChild(tr);
-                }
-            });
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${item.unit}</td>
+                <td>${item.price.toLocaleString('ru-RU')} ₽</td>
+                <td>${itemSum.toLocaleString('ru-RU')} ₽</td>
+            `;
+            pdfTableBody.appendChild(tr);
         });
-
-        if (!hasItems) {
-            alert("Добавьте хотя бы одну услугу в счёт!");
-            return;
-        }
 
         document.getElementById('pdfDate').innerText = `Дата: ${new Date().toLocaleDateString('ru-RU')}`;
         document.getElementById('pdfClientDetails').innerHTML = `
