@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор услуг и счетов</title>
-    <!-- Подключаем библиотеку html2pdf.js для генерации чистых PDF -->
+    <title>Калькулятор услуг</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -38,18 +37,15 @@
         .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
 
-        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .action-btns { margin-top: 15px; }
         
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
         .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-secondary { background: #17a2b8; color: white; }
         .btn-danger { background: #dc3545; color: white; }
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        /* Стили для сгенерированного PDF */
-        #pdfInvoice, #pdfPrice { display: none; }
+        #pdfInvoice { display: none; }
         .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
         .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
         .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
@@ -63,7 +59,7 @@
 <div class="container">
     <h1>📐 Калькулятор услуг</h1>
 
-    <a href="price.html" class="nav-btn">🔒 Управление прайс-листом</a>
+    <a href="price.html" class="nav-btn">📋 Прайс-лист услуг</a>
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
@@ -86,13 +82,11 @@
     </div>
 
     <div class="action-btns">
-        <button class="btn btn-primary" onclick="sharePDFInvoice()">📄 Отправить PDF</button>
-        <button class="btn btn-secondary" onclick="sharePDFPrice()">📋 Поделиться прайсом (PDF)</button>
+        <button class="btn btn-primary" onclick="sharePDFInvoice()">📤 Отправить счет в PDF</button>
+        <button class="btn btn-danger" onclick="resetAll()" style="margin-top: 10px;">❌ Очистить всё</button>
     </div>
-    <button class="btn btn-danger" onclick="resetAll()" style="width: 100%; margin-top: 10px;">❌ Очистить всё</button>
 </div>
 
-<!-- Скрытые блоки для генерации PDF -->
 <div id="pdfInvoice" class="pdf-template">
     <div class="pdf-header">
         <div>
@@ -118,31 +112,13 @@
     </div>
 </div>
 
-<div id="pdfPrice" class="pdf-template">
-    <div class="pdf-header">
-        <div>
-            <div class="pdf-title">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
-            <div id="pdfPriceDate" style="font-size: 12px; color: #777;"></div>
-        </div>
-    </div>
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th>Наименование</th>
-                <th>Возможные ед. изм.</th>
-                <th>Цена</th>
-            </tr>
-        </thead>
-        <tbody id="pdfPriceTableBody"></tbody>
-    </table>
-</div>
-
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
+    const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
+
     let services = [];
-    // Хранит динамически добавленные строчки видов измерений
     let selectedVariants = {}; 
 
     async function loadServicesFromCloud() {
@@ -170,7 +146,7 @@
         container.innerHTML = '';
 
         if (!services || services.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст. Добавьте услуги в панели управления.</div>';
+            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст. Добавьте услуги в разделе прайса.</div>';
             return;
         }
 
@@ -182,7 +158,7 @@
                 container.appendChild(catHeader);
             } else {
                 if (!selectedVariants[idx]) {
-                    selectedVariants[idx] = [{ qty: '', unit: parseUnits(srv.unit)[0] || 'шт.' }];
+                    selectedVariants[idx] = [{ qty: '', unit: DEFAULT_UNITS[0] }];
                 }
 
                 const card = document.createElement('div');
@@ -195,7 +171,7 @@
                         <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
                     </div>
                     <div id="unitsContainer_${idx}"></div>
-                    <button class="add-variant-btn" onclick="addVariant(${idx})">➕ Добавить еще вариант ед. изм.</button>
+                    <button class="add-variant-btn" onclick="addVariant(${idx})">➕ Добавить вариант единицы измерения</button>
                 `;
                 container.appendChild(card);
                 renderUnitRows(idx);
@@ -205,23 +181,16 @@
         updateInvoice();
     }
 
-    function parseUnits(unitString) {
-        if (!unitString) return ['шт.'];
-        return unitString.split('/').map(u => u.trim()).filter(u => u.length > 0);
-    }
-
     function renderUnitRows(srvIdx) {
         const container = document.getElementById(`unitsContainer_${srvIdx}`);
         if (!container) return;
         container.innerHTML = '';
 
-        const availableUnits = parseUnits(services[srvIdx].unit);
-
         selectedVariants[srvIdx].forEach((varItem, varIdx) => {
             const row = document.createElement('div');
             row.className = 'unit-row';
 
-            let optionsHTML = availableUnits.map(u => `<option value="${u}" ${varItem.unit === u ? 'selected' : ''}>${u}</option>`).join('');
+            let optionsHTML = DEFAULT_UNITS.map(u => `<option value="${u}" ${varItem.unit === u ? 'selected' : ''}>${u}</option>`).join('');
 
             row.innerHTML = `
                 <input type="number" min="0" placeholder="Кол-во" value="${varItem.qty}" oninput="updateQty(${srvIdx}, ${varIdx}, this.value)">
@@ -235,8 +204,7 @@
     }
 
     function addVariant(srvIdx) {
-        const availableUnits = parseUnits(services[srvIdx].unit);
-        selectedVariants[srvIdx].push({ qty: '', unit: availableUnits[0] || 'шт.' });
+        selectedVariants[srvIdx].push({ qty: '', unit: DEFAULT_UNITS[0] });
         renderUnitRows(srvIdx);
         updateInvoice();
     }
@@ -307,7 +275,6 @@
         renderServices();
     }
 
-    // Генерация и отправка PDF Счета
     async function sharePDFInvoice() {
         const clientName = document.getElementById('clientName').value.trim();
         const objectAddress = document.getElementById('objectAddress').value.trim();
@@ -366,66 +333,20 @@
         const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
         element.style.display = 'none';
 
-        shareFile(pdfBlob, 'Счет_на_оплату.pdf');
-    }
-
-    // Генерация и отправка PDF Прайс-листа
-    async function sharePDFPrice() {
-        const pdfPriceTableBody = document.getElementById('pdfPriceTableBody');
-        pdfPriceTableBody.innerHTML = '';
-
-        services.forEach((srv) => {
-            const tr = document.createElement('tr');
-            if (srv.isCategory) {
-                tr.innerHTML = `<td colspan="3" style="background:#e9ecef; font-weight:bold;">${srv.name}</td>`;
-            } else {
-                tr.innerHTML = `
-                    <td>${srv.name}</td>
-                    <td>${srv.unit || 'шт.'}</td>
-                    <td><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td>
-                `;
-            }
-            pdfPriceTableBody.appendChild(tr);
-        });
-
-        document.getElementById('pdfPriceDate').innerText = `Актуально на: ${new Date().toLocaleDateString('ru-RU')}`;
-
-        const element = document.getElementById('pdfPrice');
-        element.style.display = 'block';
-
-        const opt = {
-            margin:       10,
-            filename:     'Прайс_лист.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        element.style.display = 'none';
-
-        shareFile(pdfBlob, 'Прайс_лист.pdf');
-    }
-
-    // Універсальная функция отправки файла через Web Share API
-    async function shareFile(blob, fileName) {
-        const file = new File([blob], fileName, { type: 'application/pdf' });
+        const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
                     files: [file],
-                    title: fileName,
-                    text: 'Направляю вам документ в формате PDF.'
+                    title: 'Счет на оплату',
+                    text: 'Направляю счет на оплату в формате PDF.'
                 });
-            } catch (err) {
-                // Если отменено пользователем
-            }
+            } catch (err) {}
         } else {
-            // Запасной вариант — скачивание файла
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = 'Счет_на_оплату.pdf';
             link.click();
         }
     }
