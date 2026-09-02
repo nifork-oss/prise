@@ -44,6 +44,8 @@
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
         .btn-success { background: #28a745; color: white; }
         .btn-success:active { background: #218838; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:active { background: #0056b3; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-danger:active { background: #bd2130; }
 
@@ -78,7 +80,8 @@
     </div>
 
     <div class="action-btns">
-        <button type="button" id="sharePdfBtn" class="btn btn-success">📄 Скачать / Сохранить счёт в PDF</button>
+        <button type="button" id="shareBtn" class="btn btn-success">📤 Отправить в мессенджер</button>
+        <button type="button" id="saveDraftBtn" class="btn btn-primary">💾 Сохранить в историю (черновик)</button>
         <button type="button" id="resetBtn" class="btn btn-danger">❌ Очистить всё</button>
     </div>
 </div>
@@ -88,19 +91,21 @@
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
     const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
+    let cloudData = { services: [], users: [], history: [] };
     let services = [];
     let invoiceCart = []; 
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadServicesFromCloud();
+        loadDataFromCloud();
 
-        document.getElementById('sharePdfBtn').addEventListener('click', printInvoicePDF);
+        document.getElementById('shareBtn').addEventListener('click', shareInvoice);
+        document.getElementById('saveDraftBtn').addEventListener('click', saveDraftToCloud);
         document.getElementById('resetBtn').addEventListener('click', resetAll);
         document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
         document.getElementById('objectAddress').addEventListener('input', updateInvoiceInfo);
     });
 
-    async function loadServicesFromCloud() {
+    async function loadDataFromCloud() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 headers: { "X-Master-Key": MASTER_KEY }
@@ -109,11 +114,12 @@
             
             if (data.record) {
                 if (Array.isArray(data.record)) {
-                    services = data.record;
+                    cloudData.services = data.record;
                 } else {
-                    services = data.record.services || [];
+                    cloudData = data.record;
                 }
             }
+            services = cloudData.services || [];
 
             const loader = document.getElementById('loader');
             if (loader) loader.style.display = 'none';
@@ -256,68 +262,95 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function printInvoicePDF() {
+    function buildInvoiceText() {
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+        
+        let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
+        text += `📅 Дата: ${new Date().toLocaleDateString('ru-RU')}\n`;
+        if (client) text += `👤 Заказчик: ${client}\n`;
+        if (address) text += `📍 Адрес: ${address}\n`;
+        text += "-----------------------------------\n";
+        
+        let total = 0;
+        invoiceCart.forEach(item => {
+            const sum = item.qty * item.price;
+            total += sum;
+            text += `• ${item.name}\n  ${item.qty} ${item.unit} × ${item.price.toLocaleString('ru-RU')} ₽ = ${sum.toLocaleString('ru-RU')} ₽\n`;
+        });
+        
+        text += "-----------------------------------\n";
+        text += `💰 ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽`;
+        return text;
+    }
+
+    async function shareInvoice() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
             return;
         }
 
-        const clientInput = document.getElementById('clientName');
-        const addressInput = document.getElementById('objectAddress');
-        const client = clientInput ? clientInput.value.trim() : '';
-        const address = addressInput ? addressInput.value.trim() : '';
+        const text = buildInvoiceText();
 
-        let rows = '';
-        let total = 0;
-        invoiceCart.forEach(item => {
-            const sum = item.qty * item.price;
-            total += sum;
-            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Счет на оплату', text: text });
+                return;
+            } catch (e) {}
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Текст счёта скопирован в буфер обмена!");
+        }).catch(() => {
+            prompt("Скопируйте текст счёта:", text);
         });
+    }
 
-        const printWin = window.open('', '_blank');
-        if (!printWin) {
-            alert("Разрешите всплывающие окна для формирования PDF!");
+    async function saveDraftToCloud() {
+        if (invoiceCart.length === 0) {
+            alert("Счет пуст, нечего сохранять!");
             return;
         }
 
-        printWin.document.write(`
-            <html>
-            <head><title>Счет на оплату</title></head>
-            <body style="font-family: Arial, sans-serif; padding: 25px; color: #333; max-width: 800px; margin: 0 auto;">
-                <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
-                <p><b>Дата:</b> ${new Date().toLocaleDateString('ru-RU')}</p>
-                ${client ? `<p><b>Заказчик:</b> ${client}</p>` : ''}
-                ${address ? `<p><b>Адрес объекта:</b> ${address}</p>` : ''}
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="background-color: #f2f2f2;">
-                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
-                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
-                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
-                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
-                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-                <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
-                <script>
-                    window.onload = function() {
-                        setTimeout(() => { window.print(); }, 300);
-                    };
-                <\/script>
-            </body>
-            </html>
-        `);
-        printWin.document.close();
+        const client = document.getElementById('clientName').value.trim() || "Без имени";
+        const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
+        
+        let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+        const newRecord = {
+            date: new Date().toLocaleString('ru-RU'),
+            client: client,
+            address: address,
+            total: total,
+            items: [...invoiceCart]
+        };
+
+        if (!cloudData.history) cloudData.history = [];
+        cloudData.history.unshift(newRecord); // Добавляем в начало
+
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": MASTER_KEY
+                },
+                body: JSON.stringify(cloudData)
+            });
+
+            if (res.ok) {
+                alert("Счет успешно сохранен в облачную историю!");
+            } else {
+                alert("Ошибка сохранения в историю.");
+            }
+        } catch (e) {
+            alert("Ошибка сети.");
+        }
     }
 
     function resetAll() {
-        const clientInput = document.getElementById('clientName');
-        const addressInput = document.getElementById('objectAddress');
-        if (clientInput) clientInput.value = '';
-        if (addressInput) addressInput.value = '';
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
         invoiceCart = [];
         renderServices();
     }
