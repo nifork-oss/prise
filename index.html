@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система выставления счетов - Отделочные работы</title>
+    <!-- Подключение библиотеки jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Подключение библиотеки html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        
+        .header h1 {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            font-size: 0.9em;
+            opacity: 0.85;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-content {
+                display: grid;
+                grid-template-columns: 1fr 420px;
+                height: calc(100vh - 75px);
+            }
+        }
+        
+        .services-column {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .client-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e1e8ed;
+        }
+
+        .client-info h3 {
+            margin-bottom: 12px;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        input.placeholder-shown {
+            color: #999;
+        }
+        
+        .categories-section {
+            overflow-y: auto;
+        }
+        
+        .mobile-category {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e1e8ed;
+            overflow: hidden;
+        }
+        
+        .mobile-category-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        
+        .mobile-category-header:active {
+            background: linear-gradient(135deg, #2980b9, #2573a7);
+        }
+        
+        .mobile-category-header h3 {
+            font-size: 1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .items-count {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .mobile-category-content {
+            background: #fafbfc;
+            display: none;
+            padding: 8px 0;
+        }
+        
+        .mobile-category-content.active {
+            display: block;
+        }
+
+        .service-card {
+            background: white;
+            margin: 10px 12px;
+            padding: 14px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border-left: 4px solid #3498db;
+            transition: transform 0.2s ease;
+        }
+        
+        .service-card.special {
+            border-left-color: #f39c12;
+            background: #fffdf8;
+        }
+        
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+            gap: 8px;
+        }
+        
+        .service-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95em;
+            flex: 1;
+        }
+        
+        .service-price {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1em;
+            white-space: nowrap;
+        }
+        
+        .service-price.negotiable {
+            color: #e67e22;
+        }
+        
+        .service-description {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        
+        .service-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        @media (min-width: 480px) {
+            .service-controls {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr auto;
+                gap: 8px;
+                align-items: center;
+            }
+        }
+        
+        .service-controls input, .service-controls select {
+            margin-bottom: 0;
+        }
+        
+        .quantity-input input {
+            text-align: center;
+        }
+        
+        .unit-select, .price-input {
+            min-width: 70px;
+        }
+        
+        .price-input input {
+            text-align: center;
+            background: #f8f9fa;
+        }
+        
+        .add-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .add-btn:active {
+            transform: scale(0.96);
+        }
+        
+        .add-btn.added {
+            background: #2980b9;
+        }
+        
+        .invoice-preview {
+            background: #f8f9fa;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+            border-left: 1px solid #e1e8ed;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (max-width: 1023px) {
+            .invoice-preview {
+                border-left: none;
+                border-top: 2px solid #e1e8ed;
+            }
+        }
+        
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .invoice-header h2 {
+            color: #2c3e50;
+            margin-bottom: 4px;
+            font-size: 1.2em;
+        }
+
+        .invoice-header p {
+            color: #7f8c8d;
+            font-size: 0.85em;
+        }
+        
+        .invoice-client {
+            background: white;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            font-size: 13px;
+            border: 1px solid #e1e8ed;
+        }
+
+        .invoice-client p {
+            margin-bottom: 4px;
+        }
+
+        .invoice-client p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .invoice-items {
+            margin-bottom: 16px;
+            flex-grow: 1;
+        }
+        
+        .invoice-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e1e8ed;
+            gap: 8px;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 13px;
+            color: #2c3e50;
+        }
+        
+        .item-details {
+            color: #7f8c8d;
+            font-size: 0.78em;
+        }
+        
+        .item-total {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.95em;
+            white-space: nowrap;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s ease;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+        
+        .invoice-total {
+            background: #27ae60;
+            color: white;
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(39, 174, 96, 0.2);
+        }
+        
+        .invoice-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .btn:active {
+            transform: scale(0.96);
+        }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219150; }
+
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #d68910; }
+        
+        .empty-cart {
+            text-align: center;
+            padding: 40px 15px;
+            color: #7f8c8d;
+        }
+        
+        .empty-cart-icon {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+            opacity: 0.6;
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2c3e50;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.2em; }
+            .service-header { flex-direction: column; }
+            .invoice-actions { grid-template-columns: 1fr; }
+            .btn { padding: 11px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 Система счетов</h1>
+            <div class="subtitle">Отделочные работы</div>
+        </div>
+
+        <div class="main-content">
+            <div class="services-column">
+                <div class="client-info">
+                    <h3>📋 Информация о заказе</h3>
+                    <div class="form-group">
+                        <label for="clientName">ФИО заказчика:</label>
+                        <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientAddress">Адрес объекта:</label>
+                        <input type="text" id="clientAddress" placeholder="г. Москва, ул. Примерная, д. 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="executorName">Имя исполнителя:</label>
+                        <input type="text" id="executorName" placeholder="Петров Алексей">
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 12px; color: #2c3e50;">🛠︄1�7 Выберите услуги:</h3>
+                <div class="categories-section" id="categoriesContainer">
+                    <!-- Категории загружаются из JS -->
+                </div>
+            </div>
+
+            <div class="invoice-preview">
+                <div class="invoice-header">
+                    <h2>Предпросмотр счета</h2>
+                    <p>Сформированный счет появится ниже</p>
+                </div>
+
+                <div class="invoice-client" id="invoiceClientInfo" style="display: none;">
+                    <p><strong>Заказчик:</strong> <span id="previewClientName"></span></p>
+                    <p><strong>Адрес:</strong> <span id="previewClientAddress"></span></p>
+                    <p><strong>Исполнитель:</strong> <span id="previewExecutorName"></span></p>
+                    <p><strong>Дата:</strong> <span id="previewDate"></span></p>
+                </div>
+
+                <div class="invoice-items" id="invoiceItems">
+                    <div class="empty-cart">
+                        <div class="empty-cart-icon">🛒</div>
+                        <p>Добавьте услуги из списка слева</p>
+                    </div>
+                </div>
+
+                <div class="invoice-total" id="invoiceTotal" style="display: none;">
+                    ИТОГО: 0 ₄1�7
+                </div>
+
+                <div class="invoice-actions">
+                    <button class="btn btn-danger" onclick="clearInvoice()">❄1�7 Очистить</button>
+                    <button class="btn btn-primary" onclick="updateInvoicePreview()">🔄 Обновить</button>
+                    <button class="btn btn-warning" onclick="saveDraft(true)">💾 Сохранить</button>
+                    <button class="btn btn-success" onclick="generatePDF()">📄 Скачать PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-notification">Сохранено</div>
+
+    <script>
+    const priceListData = {
+        "Подготовительные работы": [
+            { id: 1, name: "Монтаж фасадной сетки", price: 500, unit: "м²", description: "Армирование стен фасадной сеткой" },
+            { id: 2, name: "Монтаж стеклохолста", price: 500, unit: "м²", description: "Наклейка стеклохолста на шпаклевку" },
+            { id: 3, name: "Нанесение грунт-краски на холст", price: 200, unit: "м²", description: "Грунт-краска вместо клея для холста" }
+        ],
+        "Шпаклевание и грунтовка": [
+            { id: 4, name: "Финишное шпаклевание", price: 500, unit: "м²", description: "Финишное выравнивание поверхности" },
+            { id: 5, name: "Нанесение праймера", price: 300, unit: "м²", description: "Грунтовка поверхности перед покраской" }
+        ],
+        "Покраска": [
+            { id: 6, name: "Покраска стен", price: 500, unit: "м²", description: "Покраска в 2 слоя с подготовкой" },
+            { id: 7, name: "Покраска любой лепнины", price: 500, unit: "м.п.", description: "Покраска плинтусов, молдингов, карнизов" }
+        ],
+        "Вспомогательные материалы": [
+            { id: 8, name: "Углоформирующие ленты", price: 250, unit: "м.п.", description: "Армирование внутренних и внешних углов" },
+            { id: 9, name: "Укрывные работы", price: 150, unit: "м²", description: "Защита пола, потолка, окон перед работами" }
+        ],
+        "Монтаж лепнины": [
+            { id: 10, name: "Монтаж карнизов", price: 500, unit: "м.п.", description: "Установка потолочных карнизов" },
+            { id: 11, name: "Монтаж гипсовых карнизов", price: 1500, unit: "м.п.", description: "Монтаж тяжелых гипсовых элементов" },
+            { id: 12, name: "Монтаж молдингов", price: 500, unit: "м.п.", description: "Установка декоративных молдингов" },
+            { id: 13, name: "Монтаж плинтусов", price: 500, unit: "м.п.", description: "Монтаж напольных плинтусов" }
+        ],
+        "Специальные работы": [
+            { id: 14, name: "Монтаж 3D панелей", price: 0, unit: "м²", description: "Индивидуальный расчет по проекту", negotiable: true }
+        ]
+    };
+
+    const availableUnits = ["м²", "м.п.", "ед."];
+    let selectedServices = [];
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function loadCategories() {
+        const container = document.getElementById('categoriesContainer');
+        container.innerHTML = '';
+
+        Object.keys(priceListData).forEach(category => {
+            const services = priceListData[category];
+            const categoryElement = document.createElement('div');
+            categoryElement.className = 'mobile-category';
+            categoryElement.innerHTML = `
+                <div class="mobile-category-header" onclick="toggleCategory('${category}')">
+                    <h3>
+                        <span>${getCategoryIcon(category)}</span>
+                        ${category}
+                    </h3>
+                    <div class="items-count">${services.length}</div>
+                </div>
+                <div class="mobile-category-content" id="category-${category}">
+                    ${services.map(service => createServiceCard(service)).join('')}
+                </div>
+            `;
+            container.appendChild(categoryElement);
+        });
+
+        const firstCategory = Object.keys(priceListData)[0];
+        if (firstCategory) {
+            toggleCategory(firstCategory);
+        }
+        
+        setupInputHandlers();
+    }
+
+    function getCategoryIcon(category) {
+        const icons = {
+            'Подготовительные работы': '🛠︄1�7',
+            'Шпаклевание и грунтовка': '🎨',
+            'Покраска': '🖌︄1�7',
+            'Вспомогательные материалы': '📦',
+            'Монтаж лепнины': '🏛︄1�7',
+            'Специальные работы': '⭄1�7'
+        };
+        return icons[category] || '📋';
+    }
+
+    function createServiceCard(service) {
+        const priceDisplay = service.negotiable ? 
+            '<div class="service-price negotiable">договорная</div>' :
+            `<div class="service-price">${service.price} ₄1�7</div>`;
+        
+        const isAdded = selectedServices.some(s => s.id === service.id);
+        const buttonText = isAdded ? "✄1�7 Добавлено" : "+ Добавить";
+        const buttonClass = isAdded ? "add-btn added" : "add-btn";
+
+        const quantityInput = service.negotiable ? 
+            `<div class="quantity-input">
+                <input type="text" id="qty-${service.id}" placeholder="Описание работ / объем">
+             </div>` :
+            `<div class="quantity-input">
+                <input type="number" id="qty-${service.id}" placeholder="0" min="0" step="0.1" class="placeholder-shown">
+            </div>
+            <div class="unit-select">
+                <select id="unit-${service.id}">
+                    ${availableUnits.map(unit => 
+                        `<option value="${unit}" ${unit === service.unit ? 'selected' : ''}>${unit}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="price-input">
+                <input type="number" id="price-${service.id}" value="${service.price}" min="0" step="10">
+            </div>`;
+
+        return `
+            <div class="service-card ${service.negotiable ? 'special' : ''}">
+                <div class="service-header">
+                    <div class="service-name">${service.name}</div>
+                    ${priceDisplay}
+                </div>
+                <div class="service-description">${service.description}</div>
+                <div class="service-controls">
+                    ${quantityInput}
+                    <button id="btn-${service.id}" class="${buttonClass}" onclick="addService(${service.id})">
+                        ${buttonText}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function setupInputHandlers() {
+        document.addEventListener('input', function(e) {
+            if (e.target.type === 'number' && e.target.id.startsWith('qty-')) {
+                if (e.target.value === '' || parseFloat(e.target.value) === 0) {
+                    e.target.classList.add('placeholder-shown');
+                } else {
+                    e.target.classList.remove('placeholder-shown');
+                }
+            }
+        });
+    }
+
+    function toggleCategory(category) {
+        const targetContent = document.getElementById(`category-${category}`);
+        if (!targetContent) return;
+        
+        const isActive = targetContent.classList.contains('active');
+        document.querySelectorAll('.mobile-category-content').forEach(c => c.classList.remove('active'));
+        
+        if (!isActive) {
+            targetContent.classList.add('active');
+        }
+    }
+
+    function addService(serviceId) {
+        let originalService = null;
+        for (const cat in priceListData) {
+            const found = priceListData[cat].find(s => s.id === serviceId);
+            if (found) {
+                originalService = found;
+                break;
+            }
+        }
+        
+        if (!originalService) return;
+
+        let quantity, price, unit, description;
+
+        if (originalService.negotiable) {
+            const descInput = document.getElementById(`qty-${serviceId}`);
+            quantity = descInput ? descInput.value.trim() : '';
+            if (!quantity) {
+                alert('Введите описание работ или объём для договорной услуги!');
+                return;
+            }
+            price = 0;
+            unit = "ед.";
+            description = quantity;
+        } else {
+            const qtyInput = document.getElementById(`qty-${serviceId}`);
+            quantity = parseFloat(qtyInput ? qtyInput.value : 0);
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('Введите количество больше 0!');
+                return;
+            }
+            const priceInput = document.getElementById(`price-${serviceId}`);
+            price = parseFloat(priceInput ? priceInput.value : originalService.price);
+            const unitSelect = document.getElementById(`unit-${serviceId}`);
+            unit = unitSelect ? unitSelect.value : originalService.unit;
+            description = `${quantity} ${unit} × ${price} ₽`;
+        }
+
+        const total = originalService.negotiable ? 0 : quantity * price;
+        const existingIndex = selectedServices.findIndex(s => s.id === serviceId);
+
+        const serviceData = {
+            ...originalService,
+            quantity,
+            price,
+            unit,
+            total,
+            description,
+            calculated: !originalService.negotiable
+        };
+
+        if (existingIndex > -1) {
+            selectedServices[existingIndex] = serviceData;
+        } else {
+            selectedServices.push(serviceData);
+        }
+
+        const btn = document.getElementById(`btn-${serviceId}`);
+        if (btn) {
+            btn.textContent = "✄1�7 Добавлено";
+            btn.classList.add('added');
+        }
+        
+        updateInvoicePreview();
+        saveDraft(false);
+    }
+
+    function removeService(index) {
+        const removedItem = selectedServices[index];
+        selectedServices.splice(index, 1);
+        
+        if (removedItem) {
+            const btn = document.getElementById(`btn-${removedItem.id}`);
+            if (btn) {
+                btn.textContent = "+ Добавить";
+                btn.classList.remove('added');
+            }
+        }
+        
+        updateInvoicePreview();
+        saveDraft(false);
+    }
+
+    function updateInvoicePreview() {
+        const clientName = document.getElementById('clientName').value.trim();
+        const clientAddress = document.getElementById('clientAddress').value.trim();
+        const executorName = document.getElementById('executorName').value.trim();
+
+        const clientInfoBlock = document.getElementById('invoiceClientInfo');
+        if (clientName || clientAddress || executorName) {
+            document.getElementById('previewClientName').textContent = clientName || ' 1�7';
+            document.getElementById('previewClientAddress').textContent = clientAddress || ' 1�7';
+            document.getElementById('previewExecutorName').textContent = executorName || ' 1�7';
+            document.getElementById('previewDate').textContent = new Date().toLocaleDateString('ru-RU');
+            clientInfoBlock.style.display = 'block';
+        } else {
+            clientInfoBlock.style.display = 'none';
+        }
+
+        const itemsContainer = document.getElementById('invoiceItems');
+        
+        if (selectedServices.length === 0) {
+            itemsContainer.innerHTML = `
+                <div class="empty-cart">
+                    <div class="empty-cart-icon">🛒</div>
+                    <p>Добавьте услуги из списка слева</p>
+                </div>
+            `;
+            document.getElementById('invoiceTotal').style.display = 'none';
+            return;
+        }
+
+        itemsContainer.innerHTML = '';
+        let grandTotal = 0;
+
+        selectedServices.forEach((service, index) => {
+            const item = document.createElement('div');
+            item.className = 'invoice-item';
+            item.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${service.name}</div>
+                    <div class="item-details">${service.description}</div>
+                </div>
+                <div class="item-total">
+                    ${service.calculated ? service.total.toLocaleString('ru-RU') + ' ₄1�7' : 'договорная'}
+                </div>
+                <button class="remove-btn" onclick="removeService(${index})" title="Удалить позицию">✄1�7</button>
+            `;
+            itemsContainer.appendChild(item);
+
+            if (service.calculated) {
+                grandTotal += service.total;
+            }
+        });
+
+        const totalElement = document.getElementById('invoiceTotal');
+        const hasCalculated = selectedServices.some(s => s.calculated);
+        const hasNegotiable = selectedServices.some(s => !s.calculated);
+
+        let totalText = 'ИТОГО: ';
+        if (hasCalculated) {
+            totalText += grandTotal.toLocaleString('ru-RU') + ' ₄1�7';
+        }
+        if (hasNegotiable) {
+            if (hasCalculated) totalText += ' + ';
+            totalText += 'договорная цена';
+        }
+
+        totalElement.textContent = totalText;
+        totalElement.style.display = 'block';
+    }
+
+    function clearInvoice() {
+        if (selectedServices.length === 0) {
+            alert('Счет уже пустой!');
+            return;
+        }
+
+        if (confirm('Вы действительно хотите очистить весь счет?')) {
+            selectedServices = [];
+            
+            document.querySelectorAll('.add-btn').forEach(btn => {
+                btn.textContent = "+ Добавить";
+                btn.classList.remove('added');
+            });
+
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                if (input.id.startsWith('qty-')) {
+                    input.value = '';
+                    input.classList.add('placeholder-shown');
+                }
+            });
+
+            updateInvoicePreview();
+            localStorage.removeItem('invoiceDraft');
+            showToast('Счет успешно очищен');
+        }
+    }
+
+    function saveDraft(notify = true) {
+        const draft = {
+            clientName: document.getElementById('clientName').value,
+            clientAddress: document.getElementById('clientAddress').value,
+            executorName: document.getElementById('executorName').value,
+            services: selectedServices,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('invoiceDraft', JSON.stringify(draft));
+        if (notify) showToast('Черновик сохранен');
+    }
+
+    function loadDraft() {
+        const saved = localStorage.getItem('invoiceDraft');
+        if (!saved) return;
+
+        try {
+            const draft = JSON.parse(saved);
+            document.getElementById('clientName').value = draft.clientName || '';
+            document.getElementById('clientAddress').value = draft.clientAddress || '';
+            document.getElementById('executorName').value = draft.executorName || '';
+            
+            selectedServices = draft.services || [];
+            
+            selectedServices.forEach(service => {
+                const btn = document.getElementById(`btn-${service.id}`);
+                if (btn) {
+                    btn.textContent = "✄1�7 Добавлено";
+                    btn.classList.add('added');
+                }
+                const qtyInput = document.getElementById(`qty-${service.id}`);
+                if (qtyInput) {
+                    qtyInput.value = service.quantity;
+                    qtyInput.classList.remove('placeholder-shown');
+                }
+            });
+
+            updateInvoicePreview();
+        } catch (e) {
+            console.error('Ошибка загрузки черновика:', e);
+        }
+    }
+
+    async function generatePDF() {
+        if (selectedServices.length === 0) {
+            alert('Добавьте хотя бы одну услугу для формирования PDF!');
+            return;
+        }
+
+        const clientName = document.getElementById('clientName').value.trim() || 'Не указано';
+        const clientAddress = document.getElementById('clientAddress').value.trim() || 'Не указано';
+        const executorName = document.getElementById('executorName').value.trim() || 'Не указано';
+        const currentDate = new Date().toLocaleDateString('ru-RU');
+
+        const pdfHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 0; 
+                        padding: 30px; 
+                        color: #2c3e50;
+                        background: #ffffff;
+                    }
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 25px;
+                        border-bottom: 2px solid #3498db;
+                        padding-bottom: 12px;
+                    }
+                    .header h1 { 
+                        margin: 0 0 5px 0; 
+                        font-size: 22px; 
+                        color: #2c3e50;
+                    }
+                    .header p {
+                        margin: 0;
+                        color: #7f8c8d;
+                        font-size: 13px;
+                    }
+                    .info-section { 
+                        margin-bottom: 20px; 
+                        background: #f8f9fa;
+                        padding: 12px 15px;
+                        border-radius: 6px;
+                        border: 1px solid #e1e8ed;
+                        font-size: 13px;
+                    }
+                    .info-section p { 
+                        margin: 4px 0; 
+                    }
+                    .table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    .table th { 
+                        background-color: #3498db; 
+                        color: white; 
+                        padding: 8px 10px; 
+                        text-align: left;
+                        border: 1px solid #2980b9;
+                    }
+                    .table td { 
+                        padding: 8px 10px; 
+                        border: 1px solid #e1e8ed;
+                    }
+                    .table tr:nth-child(even) {
+                        background-color: #fcfcfc;
+                    }
+                    .total { 
+                        text-align: right; 
+                        font-size: 15px; 
+                        font-weight: bold; 
+                        margin-top: 15px;
+                        padding: 12px 15px;
+                        background-color: #27ae60;
+                        color: white;
+                        border-radius: 6px;
+                    }
+                    .signatures { 
+                        margin-top: 40px; 
+                        display: flex; 
+                        justify-content: space-between;
+                        font-size: 13px;
+                    }
+                    .signature { 
+                        width: 45%; 
+                    }
+                    .footer { 
+                        margin-top: 30px; 
+                        text-align: center; 
+                        font-size: 11px; 
+                        color: #95a5a6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>СЧЕТ НА ОПЛАТУ УСЛУГ</h1>
+                    <p>Дата оформления: ${currentDate}</p>
+                </div>
+
+                <div class="info-section">
+                    <p><strong>Заказчик:</strong> ${clientName}</p>
+                    <p><strong>Адрес объекта:</strong> ${clientAddress}</p>
+                    <p><strong>Исполнитель:</strong> ${executorName}</p>
+                </div>
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th width="6%">℄1�7</th>
+                            <th width="44%">Наименование услуги</th>
+                            <th width="16%">Количество</th>
+                            <th width="16%">Цена</th>
+                            <th width="18%">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${selectedServices.map((service, index) => `
+                            <tr>
+                                <td style="text-align: center;">${index + 1}</td>
+                                <td>${service.name}</td>
+                                <td>${service.calculated ? service.quantity + ' ' + service.unit : service.description}</td>
+                                <td>${service.calculated ? service.price.toLocaleString('ru-RU') + ' ₄1�7' : ' 1�7'}</td>
+                                <td>${service.calculated ? service.total.toLocaleString('ru-RU') + ' ₄1�7' : 'договорная'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="total">
+                    ИТОГО: ${selectedServices.filter(s => s.calculated).reduce((sum, s) => sum + s.total, 0).toLocaleString('ru-RU')} ₄1�7
+                    ${selectedServices.some(s => !s.calculated) ? ' (+ договорные услуги)' : ''}
+                </div>
+
+                <div class="signatures">
+                    <div class="signature">
+                        <p>Исполнитель: _________________</p>
+                        <p style="margin-top: 5px; font-weight: bold;">(${executorName})</p>
+                    </div>
+                    <div class="signature">
+                        <p>Заказчик: _________________</p>
+                        <p style="margin-top: 5px; font-weight: bold;">(${clientName})</p>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>Документ сформирован автоматически в системе счетов</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.left = '-9999px';
+        iframe.style.top = '0';
+        iframe.style.width = '794px';
+        iframe.style.height = '1123px';
+        
+        document.body.appendChild(iframe);
+
+        const iframeDoc = iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(pdfHTML);
+        iframeDoc.close();
+
+        iframe.onload = async function() {
+            try {
+                const canvas = await html2canvas(iframeDoc.body, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    width: 794,
+                    windowWidth: 794
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save(`Счет_${currentDate.replace(/\./g, '_')}.pdf`);
+                
+            } catch (error) {
+                console.error('Ошибка генерации PDF:', error);
+                alert('Сбой генерации PDF. Создается резервная текстовая версия...');
+                generateSimplePDF();
+            } finally {
+                document.body.removeChild(iframe);
+            }
+        };
+    }
+
+    function generateSimplePDF() {
+        const clientName = document.getElementById('clientName').value.trim() || 'Not specified';
+        const currentDate = new Date().toLocaleDateString('ru-RU');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(16);
+        doc.text('INVOICE / SCHET', 105, 20, { align: 'center' });
+
+        doc.setFontSize(10);
+        doc.text(`Date: ${currentDate}`, 20, 35);
+        doc.text(`Client: ${translit(clientName)}`, 20, 43);
+
+        let yPosition = 60;
+        let totalAmount = 0;
+
+        selectedServices.forEach((service, index) => {
+            if (yPosition > 260) {
+                doc.addPage();
+                yPosition = 20;
+            }
+
+            const name = translit(service.name);
+            doc.text(`${index + 1}. ${name.substring(0, 35)}`, 20, yPosition);
+            
+            if (service.calculated) {
+                doc.text(`${service.total} RUB`, 180, yPosition, { align: 'right' });
+                totalAmount += service.total;
+            } else {
+                doc.text('negotiable', 180, yPosition, { align: 'right' });
+            }
+            
+            yPosition += 8;
+        });
+
+        yPosition += 10;
+        doc.setFontSize(12);
+        doc.text(`TOTAL: ${totalAmount} RUB`, 20, yPosition);
+
+        doc.save(`Invoice_${currentDate.replace(/\./g, '_')}.pdf`);
+    }
+
+    function translit(str) {
+        const ru = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 
+            'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 
+            'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 
+            'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 
+            'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 
+            'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 
+            'э': 'e', 'ю': 'yu', 'я': 'ya'
+        };
+        return str.split('').map(char => {
+            const lower = char.toLowerCase();
+            if (ru[lower] !== undefined) {
+                return char === lower ? ru[lower] : ru[lower].toUpperCase();
+            }
+            return char;
+        }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    localStorage.removeItem('invoiceDraft'); // ����ڧ�ѧ֧� ��ѧާ��� ���� �٧ѧ���ܧ�
+    loadCategories();
+    updateInvoicePreview();
+    
+    ['clientName', 'clientAddress', 'executorName'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            updateInvoicePreview();
+        });
+    });
+});
+
+    </script>
+</body>
+</html>
