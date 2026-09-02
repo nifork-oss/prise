@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор услуг</title>
     <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
         h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
         
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; }
-        .nav-btn:hover { background: #0056b3; }
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; cursor: pointer; }
+        .nav-btn:active { background: #0056b3; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
@@ -43,7 +43,11 @@
         
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
         .btn-primary { background: #007bff; color: white; }
+        .btn-primary:active { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:active { background: #218838; }
         .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:active { background: #bd2130; }
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
@@ -57,11 +61,11 @@
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
-        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoiceInfo()">
+        <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
     </div>
     <div class="form-group">
         <label>Адрес объекта</label>
-        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoiceInfo()">
+        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1">
     </div>
 
     <h2>🛠 Выберите услуги:</h2>
@@ -76,8 +80,8 @@
     </div>
 
     <div class="action-btns">
-        <button type="button" class="btn btn-primary" onclick="sharePDFInvoice()">📤 Отправить счёт в мессенджер</button>
-        <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
+        <button type="button" id="sharePdfBtn" class="btn btn-success">📤 Сохранить / Поделиться счётом (PDF)</button>
+        <button type="button" id="resetBtn" class="btn btn-danger">❌ Очистить всё</button>
     </div>
 </div>
 
@@ -91,6 +95,11 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         loadServicesFromCloud();
+
+        document.getElementById('sharePdfBtn').addEventListener('click', printInvoicePDF);
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+        document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
+        document.getElementById('objectAddress').addEventListener('input', updateInvoiceInfo);
     });
 
     async function loadServicesFromCloud() {
@@ -150,10 +159,17 @@
                             ${unitsOptions}
                         </select>
                     </div>
-                    <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                    <button type="button" class="add-to-cart-btn" data-index="${idx}">➕ Добавить в счёт</button>
                 `;
                 container.appendChild(card);
             }
+        });
+
+        container.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+                addToInvoice(idx);
+            });
         });
 
         renderInvoice();
@@ -191,8 +207,10 @@
     function updateInvoiceInfo() {
         const info = document.getElementById('invoiceInfo');
         if (!info) return;
-        const client = document.getElementById('clientName').value.trim();
-        const address = document.getElementById('objectAddress').value.trim();
+        const clientInput = document.getElementById('clientName');
+        const addressInput = document.getElementById('objectAddress');
+        const client = clientInput ? clientInput.value.trim() : '';
+        const address = addressInput ? addressInput.value.trim() : '';
 
         let infoHTML = '';
         if (client) infoHTML += `<b>Заказчик:</b> ${client}<br>`;
@@ -222,7 +240,7 @@
             itemRow.className = 'invoice-item';
             itemRow.innerHTML = `
                 <div class="invoice-item-info">
-                    <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
+                    <button type="button" class="btn-delete-item" data-cart-index="${idx}">✕</button>
                     <span>${item.name} (${item.qty} ${item.unit})</span>
                 </div>
                 <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
@@ -230,51 +248,71 @@
             invoiceItems.appendChild(itemRow);
         });
 
+        invoiceItems.querySelectorAll('.btn-delete-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const cartIdx = parseInt(e.currentTarget.getAttribute('data-cart-index'));
+                removeFromInvoice(cartIdx);
+            });
+        });
+
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    async function sharePDFInvoice() {
+    function printInvoicePDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
             return;
         }
 
-        const client = document.getElementById('clientName').value.trim();
-        const address = document.getElementById('objectAddress').value.trim();
-        
-        let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
-        text += `📅 Дата: ${new Date().toLocaleDateString('ru-RU')}\n`;
-        if (client) text += `👤 Заказчик: ${client}\n`;
-        if (address) text += `📍 Адрес: ${address}\n`;
-        text += "-----------------------------------\n";
-        
+        const clientInput = document.getElementById('clientName');
+        const addressInput = document.getElementById('objectAddress');
+        const client = clientInput ? clientInput.value.trim() : '';
+        const address = addressInput ? addressInput.value.trim() : '';
+
+        let rows = '';
         let total = 0;
         invoiceCart.forEach(item => {
             const sum = item.qty * item.price;
             total += sum;
-            text += `• ${item.name}\n  ${item.qty} ${item.unit} × ${item.price.toLocaleString('ru-RU')} ₽ = ${sum.toLocaleString('ru-RU')} ₽\n`;
+            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
         });
-        
-        text += "-----------------------------------\n";
-        text += `💰 ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽`;
 
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Счет на оплату', text: text });
-                return;
-            } catch (e) {}
-        }
-
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Текст счёта скопирован в буфер обмена!");
-        }).catch(() => {
-            prompt("Скопируйте текст счёта:", text);
-        });
+        const printWin = window.open('', '_blank');
+        printWin.document.write(`
+            <html>
+            <head><title>Счет на оплату</title></head>
+            <body style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+                <p><b>Дата:</b> ${new Date().toLocaleDateString('ru-RU')}</p>
+                ${client ? `<p><b>Заказчик:</b> ${client}</p>` : ''}
+                ${address ? `<p><b>Адрес объекта:</b> ${address}</p>` : ''}
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Наименование</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Кол-во</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Ед.</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Цена</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <h3 style="text-align: right; margin-top: 20px;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+                <script>
+                    window.onload = function() { window.print(); };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWin.document.close();
     }
 
     function resetAll() {
-        document.getElementById('clientName').value = '';
-        document.getElementById('objectAddress').value = '';
+        const clientInput = document.getElementById('clientName');
+        const addressInput = document.getElementById('objectAddress');
+        if (clientInput) clientInput.value = '';
+        if (addressInput) addressInput.value = '';
         invoiceCart = [];
         renderServices();
     }
