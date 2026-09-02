@@ -19,7 +19,7 @@ async function loadCloudData(isPricePage = false) {
             if (Array.isArray(data.record)) {
                 cloudData.services = data.record;
             } else {
-                cloudData.record = data.record;
+                cloudData = data.record;
                 if (!cloudData.users || cloudData.users.length === 0) {
                     cloudData.users = [{ login: "admin", pass: "12345" }];
                 }
@@ -192,14 +192,11 @@ async function sharePDFInvoice() {
                 text: text
             });
             return;
-        } catch (e) {
-            // Если пользователь отменил или браузер отклонил, переходим к запасному варианту
-        }
+        } catch (e) {}
     }
 
-    // Запасной вариант: копирование в буфер обмена для вставки в мессенджер
     navigator.clipboard.writeText(text).then(() => {
-        alert("Текст счёта скопирован в буфер обмена! Вы можете вставить его в WhatsApp или Telegram.");
+        alert("Текст счёта скопирован в буфер обмена!");
     }).catch(() => {
         prompt("Скопируйте текст счёта:", text);
     });
@@ -317,7 +314,6 @@ function addNewUser() {
 
 function deleteUser(index) {
     if (confirm('Удалить пользователя?')) {
-        cloudData.services.splice(index, 1); // wait, fixed below
         cloudData.users.splice(index, 1);
         if (index < currentUserIndex) currentUserIndex--;
         renderUsersList();
@@ -356,7 +352,7 @@ async function sharePDFPrice() {
     }
 
     navigator.clipboard.writeText(text).then(() => {
-        alert("Прайс-лист скопирован в буфер обмена! Вы можете вставить его в любой мессенджер.");
+        alert("Прайс-лист скопирован в буфер обмена!");
     }).catch(() => {
         prompt("Скопируйте текст прайса:", text);
     });
