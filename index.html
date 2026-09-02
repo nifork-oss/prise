@@ -84,7 +84,15 @@
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
-            services = data.record;
+            
+            // Если пришли новые данные со структурой { services: [...], users: [...] }
+            if (data.record && data.record.services) {
+                services = data.record.services;
+            } else if (Array.isArray(data.record)) {
+                // Запасной вариант для старой структуры
+                services = data.record;
+            }
+
             document.getElementById('loader').style.display = 'none';
             renderServices();
         } catch (e) {
@@ -95,6 +103,11 @@
     function renderServices() {
         const container = document.getElementById('servicesList');
         container.innerHTML = '';
+
+        if (!services || services.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст. Добавьте услуги в панели управления.</div>';
+            return;
+        }
 
         services.forEach((srv, idx) => {
             if (srv.isCategory) {
