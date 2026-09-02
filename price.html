@@ -3,436 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление прайс-листом и пользователями</title>
+    <title>Управление прайс-листом</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
-        h1 { font-size: 22px; margin-bottom: 20px; }
-        h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
-
-        .auth-box { display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 40px auto; }
         
-        .form-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
-        .form-row { display: flex; gap: 10px; }
-        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; }
-        input[type="text"], input[type="password"] { flex: 2; }
-        input[type="number"] { flex: 1; }
+        .nav-btn { display: inline-block; text-decoration: none; background: #6c757d; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; margin-bottom: 15px; }
 
-        .add-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
-        .btn-primary { background: #007bff; color: white; }
-        .add-btn { background: #28a745; color: white; }
-        .add-cat-btn { background: #6c757d; color: white; }
+        .auth-box { text-align: center; padding: 20px 0; }
+        .auth-box input { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; width: 200px; text-align: center; }
 
-        ul { list-style: none; padding: 0; margin: 0; }
-        li { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 8px; }
-        li.cat-item { background: #e9ecef; border-left: 4px solid #6c757d; }
+        .form-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+        .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        .category-item { background: #e9ecef; font-weight: bold; }
         
-        .item-view { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .item-info { display: flex; flex-direction: column; gap: 2px; }
-        .item-name { font-weight: 600; font-size: 15px; }
-        .cat-name { font-weight: bold; font-size: 16px; color: #343a40; }
-        .item-price { font-size: 14px; color: #28a745; font-weight: bold; }
-        
-        .item-actions { display: flex; gap: 6px; }
-        .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .edit-btn { background: #ffc107; color: #212529; }
-        .delete-btn { background: #dc3545; color: white; }
-        .save-btn { background: #007bff; color: white; }
-        .cancel-btn { background: #6c757d; color: white; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #007bff; color: white; width: 100%; }
+        .btn-success { background: #28a745; color: white; width: 100%; margin-top: 10px; }
+        .btn-danger { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; }
 
-        .edit-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-        .nav-link { display: block; text-align: center; margin-top: 20px; color: #007bff; text-decoration: none; font-size: 14px; }
-        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-
-        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 8px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; color: #495057; }
-        .tab-btn.active { background: #007bff; color: white; }
-
-        .user-card { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #eee; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
-        .user-name { font-weight: 600; font-size: 14px; }
-        .user-tag { font-size: 11px; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .hint { font-size: 11px; color: #888; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- ЭКРАН АВТОРИЗАЦИИ -->
-    <div id="authScreen">
-        <h1>🔒 Вход в панель управления</h1>
-        <div class="auth-box">
-            <input type="text" id="loginInput" placeholder="Логин">
-            <input type="password" id="passInput" placeholder="Пароль">
-            <button class="btn-primary" onclick="checkAuth()">Войти</button>
-            <div id="authError" style="color:red; font-size:12px; text-align:center; display:none;">Неверный логин или пароль</div>
-        </div>
-        <a href="index.html" class="nav-link">← На главную</a>
+    <a href="index.html" class="nav-btn">⬅ Назад к калькулятору</a>
+    <h1>🔒 Управление прайс-листом</h1>
+
+    <!-- Ввод PIN-кода -->
+    <div id="authBox" class="auth-box">
+        <p>Введите PIN-код для доступа:</p>
+        <input type="password" id="pinInput" placeholder="****" maxlength="4">
+        <button class="btn btn-primary" style="margin-top: 10px;" onclick="checkPin()">Войти</button>
     </div>
 
-    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
+    <!-- Панель управления (скрыта по умолчанию) -->
     <div id="adminPanel" style="display: none;">
-        <h1>⚙️ Панель управления</h1>
-
-        <div class="tab-menu">
-            <button class="tab-btn active" id="tabPriceBtn" onclick="switchTab('price')">🏷 Прайс-лист</button>
-            <button class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')">👥 Пользователи</button>
-        </div>
-
-        <div id="saveStatus" style="text-align: center; font-weight: bold; margin-bottom: 10px;"></div>
-
-        <!-- ВКЛАДКА 1: ПРАЙС-ЛИСТ -->
-        <div id="priceTab">
+        
+        <div class="form-box">
+            <h3 style="margin-top:0;">➕ Добавить позицию</h3>
             <div class="form-group">
-                <input type="text" id="serviceName" placeholder="Название услуги или Категории">
-                <div class="form-row">
-                    <input type="number" id="servicePrice" placeholder="Цена (₽)">
-                    <select id="serviceUnit">
-                        <option value="м²">за м²</option>
-                        <option value="м.п.">за м.п.</option>
-                        <option value="шт.">за шт.</option>
-                        <option value="услуга">за услугу</option>
-                    </select>
+                <label>Тип</label>
+                <select id="typeSelect" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" onchange="toggleFormType()">
+                    <option value="service">Услуга / Работа</option>
+                    <option value="category">Раздел / Категория</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Название</label>
+                <input type="text" id="nameInput" placeholder="Например: Поклейка обоев">
+            </div>
+            <div id="serviceFields">
+                <div class="form-group">
+                    <label>Единицы измерения (через слэш /)</label>
+                    <input type="text" id="unitInput" placeholder="например: м² / пог. м">
+                    <div class="hint">Укажите варианты разделяя слэшем '/', чтобы при расчете можно было выбрать любой.</div>
                 </div>
-                <div class="add-btns">
-                    <button class="add-btn" onclick="addService(false)">➕ Услугу</button>
-                    <button class="add-cat-btn" onclick="addService(true)">📁 Категорию</button>
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="priceInput" placeholder="350">
                 </div>
             </div>
-
-            <div id="loader" class="loader">⏳ Загрузка данных...</div>
-            <ul id="priceList"></ul>
+            <button class="btn btn-primary" onclick="addItem()">Добавить в прайс</button>
         </div>
 
-        <!-- ВКЛАДКА 2: ПОЛЬЗОВАТЕЛИ -->
-        <div id="usersTab" style="display: none;">
-            <h2>👤 Смена логина и пароля текущего аккаунта</h2>
-            <div class="form-group">
-                <input type="text" id="newCurrentLogin" placeholder="Новый логин">
-                <input type="password" id="newCurrentPass" placeholder="Новый пароль">
-                <button class="btn-primary" onclick="updateCurrentAccount()">💾 Сохранить изменения</button>
-            </div>
+        <h2>Текущий прайс-лист:</h2>
+        <div id="priceList"></div>
 
-            <h2>➕ Добавить нового пользователя</h2>
-            <div class="form-group">
-                <input type="text" id="newNumLogin" placeholder="Логин нового пользователя">
-                <input type="password" id="newNumPass" placeholder="Пароль">
-                <button class="add-btn" onclick="addNewUser()">➕ Добавить пользователя</button>
-            </div>
-
-            <h2>📋 Список пользователей</h2>
-            <div id="usersList"></div>
-        </div>
-
-        <a href="index.html" class="nav-link">← Вернуться к калькулятору</a>
+        <button class="btn btn-success" onclick="saveToCloud()">💾 Сохранить изменения в облако</button>
     </div>
 </div>
 
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
+    const CORRECT_PIN = "1234";
 
-    // По умолчанию, если данных в БД ещё нет
-    const defaultUsers = [{ login: "admin", pass: "12345" }];
+    let services = [];
 
-    let cloudData = {
-        services: [],
-        users: []
-    };
+    function checkPin() {
+        const pin = document.getElementById('pinInput').value;
+        if (pin === CORRECT_PIN) {
+            document.getElementById('authBox').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            loadData();
+        } else {
+            alert('Неверный PIN-код!');
+        }
+    }
 
-    let currentUserIndex = -1;
-    let editingIndex = -1;
-
-    async function fetchCloudData() {
+    async function loadData() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
             
-            // Если структура старая (просто массив услуг), пересобираем
-            if (Array.isArray(data.record)) {
-                cloudData.services = data.record;
-                cloudData.users = defaultUsers;
-            } else {
-                cloudData = data.record;
-                if (!cloudData.users || cloudData.users.length === 0) {
-                    cloudData.users = defaultUsers;
-                }
+            if (data.record && data.record.services) {
+                services = data.record.services;
+            } else if (Array.isArray(data.record)) {
+                services = data.record;
             }
-            return true;
+            renderList();
         } catch (e) {
-            alert("Ошибка подключения к облаку!");
-            return false;
+            alert("Ошибка загрузки прайса.");
         }
     }
 
-    async function checkAuth() {
-        const l = document.getElementById('loginInput').value.trim();
-        const p = document.getElementById('passInput').value.trim();
+    function toggleFormType() {
+        const type = document.getElementById('typeSelect').value;
+        document.getElementById('serviceFields').style.display = type === 'service' ? 'block' : 'none';
+    }
 
-        const ok = await fetchCloudData();
-        if (!ok) return;
+    function renderList() {
+        const list = document.getElementById('priceList');
+        list.innerHTML = '';
 
-        const userIdx = cloudData.users.findIndex(u => u.login === l && u.pass === p);
+        services.forEach((item, index) => {
+            const div = document.createElement('div');
+            if (item.isCategory) {
+                div.className = 'service-item category-item';
+                div.innerHTML = `<span>📁 <b>${item.name}</b></span>
+                                 <button class="btn btn-danger" onclick="deleteItem(${index})">✕</button>`;
+            } else {
+                div.className = 'service-item';
+                div.innerHTML = `<span>${item.name} — <b>${Number(item.price).toLocaleString('ru-RU')} ₽</b> [${item.unit || 'шт.'}]</span>
+                                 <button class="btn btn-danger" onclick="deleteItem(${index})">✕</button>`;
+            }
+            list.appendChild(div);
+        });
+    }
 
-        if (userIdx !== -1) {
-            currentUserIndex = userIdx;
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('loader').style.display = 'none';
-            
-            // Заполняем поля смена логина/пароля текущего юзера
-            document.getElementById('newCurrentLogin').value = cloudData.users[currentUserIndex].login;
-            document.getElementById('newCurrentPass').value = cloudData.users[currentUserIndex].pass;
+    function addItem() {
+        const type = document.getElementById('typeSelect').value;
+        const name = document.getElementById('nameInput').value.trim();
 
-            renderList();
-            renderUsers();
+        if (!name) {
+            alert('Введите название!');
+            return;
+        }
+
+        if (type === 'category') {
+            services.push({ name: name, isCategory: true });
         } else {
-            document.getElementById('authError').style.display = 'block';
+            const unit = document.getElementById('unitInput').value.trim() || 'шт.';
+            const price = parseFloat(document.getElementById('priceInput').value);
+
+            if (isNaN(price)) {
+                alert('Укажите корректную цену!');
+                return;
+            }
+
+            services.push({ name: name, unit: unit, price: price, isCategory: false });
+        }
+
+        document.getElementById('nameInput').value = '';
+        document.getElementById('unitInput').value = '';
+        document.getElementById('priceInput').value = '';
+
+        renderList();
+    }
+
+    function deleteItem(index) {
+        if (confirm('Удалить эту позицию?')) {
+            services.splice(index, 1);
+            renderList();
         }
     }
 
     async function saveToCloud() {
-        const status = document.getElementById('saveStatus');
-        status.style.color = "#007bff";
-        status.innerText = "⏳ Сохранение изменений в облако...";
-
         try {
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: 'PUT',
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     "X-Master-Key": MASTER_KEY
                 },
-                body: JSON.stringify(cloudData)
+                body: JSON.stringify({ services: services })
             });
-            status.style.color = "#28a745";
-            status.innerText = "✅ Изменения успешно сохранены!";
-            setTimeout(() => { status.innerText = ""; }, 3000);
-        } catch (e) {
-            status.style.color = "#dc3545";
-            status.innerText = "❌ Ошибка сохранения";
-        }
-    }
 
-    function switchTab(tab) {
-        if (tab === 'price') {
-            document.getElementById('priceTab').style.display = 'block';
-            document.getElementById('usersTab').style.display = 'none';
-            document.getElementById('tabPriceBtn').classList.add('active');
-            document.getElementById('tabUsersBtn').classList.remove('active');
-        } else {
-            document.getElementById('priceTab').style.display = 'none';
-            document.getElementById('usersTab').style.display = 'block';
-            document.getElementById('tabPriceBtn').classList.remove('active');
-            document.getElementById('tabUsersBtn').classList.add('active');
-        }
-    }
-
-    /* --- УПРАВЛЕНИЕ ПРАЙС-ЛИСТОМ --- */
-    function renderList() {
-        const listContainer = document.getElementById('priceList');
-        listContainer.innerHTML = '';
-
-        cloudData.services.forEach((srv, index) => {
-            const li = document.createElement('li');
-            if (srv.isCategory) li.className = 'cat-item';
-
-            if (editingIndex === index) {
-                if (srv.isCategory) {
-                    li.innerHTML = `
-                        <div class="edit-form">
-                            <input type="text" id="editName_${index}" value="${srv.name}">
-                            <div class="item-actions">
-                                <button class="btn-sm save-btn" onclick="saveEdit(${index})">💾 Сохранить</button>
-                                <button class="btn-sm cancel-btn" onclick="cancelEdit()">Отмена</button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    li.innerHTML = `
-                        <div class="edit-form">
-                            <input type="text" id="editName_${index}" value="${srv.name}">
-                            <div class="form-row">
-                                <input type="number" id="editPrice_${index}" value="${srv.price}">
-                                <select id="editUnit_${index}">
-                                    <option value="м²" ${srv.unit === 'м²' ? 'selected' : ''}>за м²</option>
-                                    <option value="м.п." ${srv.unit === 'м.п.' ? 'selected' : ''}>за м.п.</option>
-                                    <option value="шт." ${srv.unit === 'шт.' ? 'selected' : ''}>за шт.</option>
-                                    <option value="услуга" ${srv.unit === 'услуга' ? 'selected' : ''}>за услугу</option>
-                                </select>
-                            </div>
-                            <div class="item-actions">
-                                <button class="btn-sm save-btn" onclick="saveEdit(${index})">💾 Сохранить</button>
-                                <button class="btn-sm cancel-btn" onclick="cancelEdit()">Отмена</button>
-                            </div>
-                        </div>
-                    `;
-                }
+            if (res.ok) {
+                alert("Прайс-лист успешно обновлен в облаке!");
             } else {
-                if (srv.isCategory) {
-                    li.innerHTML = `
-                        <div class="item-view">
-                            <span class="cat-name">📁 Раздел: ${srv.name}</span>
-                            <div class="item-actions">
-                                <button class="btn-sm edit-btn" onclick="startEdit(${index})">✏️</button>
-                                <button class="btn-sm delete-btn" onclick="deleteService(${index})">🗑</button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    li.innerHTML = `
-                        <div class="item-view">
-                            <div class="item-info">
-                                <span class="item-name">${srv.name}</span>
-                                <span class="item-price">${Number(srv.price).toLocaleString('ru-RU')} ₽ / ${srv.unit || 'шт.'}</span>
-                            </div>
-                            <div class="item-actions">
-                                <button class="btn-sm edit-btn" onclick="startEdit(${index})">✏️</button>
-                                <button class="btn-sm delete-btn" onclick="deleteService(${index})">🗑</button>
-                            </div>
-                        </div>
-                    `;
-                }
+                alert("Ошибка сохранения.");
             }
-
-            listContainer.appendChild(li);
-        });
-    }
-
-    function addService(isCategory) {
-        const nameInput = document.getElementById('serviceName');
-        const priceInput = document.getElementById('servicePrice');
-        const unitSelect = document.getElementById('serviceUnit');
-
-        const name = nameInput.value.trim();
-        if (!name) return alert('Укажите название!');
-
-        if (isCategory) {
-            cloudData.services.push({ isCategory: true, name });
-        } else {
-            const price = Number(priceInput.value.trim());
-            const unit = unitSelect.value;
-            if (isNaN(price) || price <= 0) return alert('Укажите цену!');
-            cloudData.services.push({ name, price, unit });
-        }
-
-        nameInput.value = '';
-        priceInput.value = '';
-        renderList();
-        saveToCloud();
-    }
-
-    function startEdit(index) { editingIndex = index; renderList(); }
-    function cancelEdit() { editingIndex = -1; renderList(); }
-
-    function saveEdit(index) {
-        const nameVal = document.getElementById(`editName_${index}`).value.trim();
-        if (!nameVal) return alert('Заполните название!');
-
-        if (cloudData.services[index].isCategory) {
-            cloudData.services[index].name = nameVal;
-        } else {
-            const priceVal = Number(document.getElementById(`editPrice_${index}`).value.trim());
-            const unitVal = document.getElementById(`editUnit_${index}`).value;
-            if (isNaN(priceVal) || priceVal <= 0) return alert('Укажите цену!');
-            cloudData.services[index] = { name: nameVal, price: priceVal, unit: unitVal };
-        }
-
-        editingIndex = -1;
-        renderList();
-        saveToCloud();
-    }
-
-    function deleteService(index) {
-        if (confirm('Удалить позицию?')) {
-            cloudData.services.splice(index, 1);
-            if (editingIndex === index) editingIndex = -1;
-            renderList();
-            saveToCloud();
-        }
-    }
-
-    /* --- УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ --- */
-    function renderUsers() {
-        const usersContainer = document.getElementById('usersList');
-        usersContainer.innerHTML = '';
-
-        cloudData.users.forEach((u, index) => {
-            const card = document.createElement('div');
-            card.className = 'user-card';
-
-            const isCurrent = (index === currentUserIndex);
-            const tagText = isCurrent ? '<span class="user-tag">Вы</span>' : '';
-
-            let deleteBtnHTML = '';
-            if (!isCurrent && cloudData.users.length > 1) {
-                deleteBtnHTML = `<button class="btn-sm delete-btn" onclick="deleteUser(${index})">🗑 Удалить</button>`;
-            }
-
-            card.innerHTML = `
-                <div>
-                    <span class="user-name">👤 ${u.login}</span>${tagText}
-                </div>
-                ${deleteBtnHTML}
-            `;
-            usersContainer.appendChild(card);
-        });
-    }
-
-    function updateCurrentAccount() {
-        const newL = document.getElementById('newCurrentLogin').value.trim();
-        const newP = document.getElementById('newCurrentPass').value.trim();
-
-        if (!newL || !newP) {
-            return alert('Логин и пароль не могут быть пустыми!');
-        }
-
-        // Проверка, занят ли логин кем-то другим
-        const exists = cloudData.users.some((u, idx) => u.login === newL && idx !== currentUserIndex);
-        if (exists) {
-            return alert('Пользователь с таким логином уже существует!');
-        }
-
-        cloudData.users[currentUserIndex].login = newL;
-        cloudData.users[currentUserIndex].pass = newP;
-
-        renderUsers();
-        saveToCloud();
-    }
-
-    function addNewUser() {
-        const l = document.getElementById('newNumLogin').value.trim();
-        const p = document.getElementById('newNumPass').value.trim();
-
-        if (!l || !p) {
-            return alert('Заполните логин и пароль для нового пользователя!');
-        }
-
-        const exists = cloudData.users.some(u => u.login === l);
-        if (exists) {
-            return alert('Пользователь с таким логином уже есть!');
-        }
-
-        cloudData.users.push({ login: l, pass: p });
-
-        document.getElementById('newNumLogin').value = '';
-        document.getElementById('newNumPass').value = '';
-
-        renderUsers();
-        saveToCloud();
-    }
-
-    function deleteUser(index) {
-        if (confirm(`Удалить пользователя "${cloudData.users[index].login}"?`)) {
-            cloudData.users.splice(index, 1);
-            if (index < currentUserIndex) {
-                currentUserIndex--;
-            }
-            renderUsers();
-            saveToCloud();
+        } catch (e) {
+            alert("Ошибка сети при сохранении.");
         }
     }
 </script>
