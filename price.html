@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление прайс-листом</title>
+    <title>Управление прайс-листом и пользователями</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1 { text-align: center; color: #1a1a1a; margin-top: 0; font-size: 22px; margin-bottom: 20px; }
+        h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1 { font-size: 22px; margin-bottom: 20px; }
+        h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
 
         .auth-box { display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 40px auto; }
         
@@ -44,6 +46,14 @@
         .edit-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         .nav-link { display: block; text-align: center; margin-top: 20px; color: #007bff; text-decoration: none; font-size: 14px; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
+
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 8px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; color: #495057; }
+        .tab-btn.active { background: #007bff; color: white; }
+
+        .user-card { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #eee; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
+        .user-name { font-weight: 600; font-size: 14px; }
+        .user-tag { font-size: 11px; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
     </style>
 </head>
 <body>
@@ -51,7 +61,7 @@
 <div class="container">
     <!-- ЭКРАН АВТОРИЗАЦИИ -->
     <div id="authScreen">
-        <h1>🔒 Вход для администратора</h1>
+        <h1>🔒 Вход в панель управления</h1>
         <div class="auth-box">
             <input type="text" id="loginInput" placeholder="Логин">
             <input type="password" id="passInput" placeholder="Пароль">
@@ -61,69 +71,126 @@
         <a href="index.html" class="nav-link">← На главную</a>
     </div>
 
-    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ПРАЙСОМ -->
+    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
     <div id="adminPanel" style="display: none;">
-        <h1>⚙️ Настройка прайс-листа</h1>
+        <h1>⚙️ Панель управления</h1>
 
-        <div class="form-group">
-            <input type="text" id="serviceName" placeholder="Название услуги или Категории">
-            <div class="form-row">
-                <input type="number" id="servicePrice" placeholder="Цена (₽)">
-                <select id="serviceUnit">
-                    <option value="м²">за м²</option>
-                    <option value="м.п.">за м.п.</option>
-                    <option value="шт.">за шт.</option>
-                    <option value="услуга">за услугу</option>
-                </select>
-            </div>
-            <div class="add-btns">
-                <button class="add-btn" onclick="addService(false)">➕ Услугу</button>
-                <button class="add-cat-btn" onclick="addService(true)">📁 Категорию</button>
-            </div>
+        <div class="tab-menu">
+            <button class="tab-btn active" id="tabPriceBtn" onclick="switchTab('price')">🏷 Прайс-лист</button>
+            <button class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')">👥 Пользователи</button>
         </div>
 
         <div id="saveStatus" style="text-align: center; font-weight: bold; margin-bottom: 10px;"></div>
-        <div id="loader" class="loader">⏳ Загрузка прайс-листа...</div>
-        <ul id="priceList"></ul>
+
+        <!-- ВКЛАДКА 1: ПРАЙС-ЛИСТ -->
+        <div id="priceTab">
+            <div class="form-group">
+                <input type="text" id="serviceName" placeholder="Название услуги или Категории">
+                <div class="form-row">
+                    <input type="number" id="servicePrice" placeholder="Цена (₽)">
+                    <select id="serviceUnit">
+                        <option value="м²">за м²</option>
+                        <option value="м.п.">за м.п.</option>
+                        <option value="шт.">за шт.</option>
+                        <option value="услуга">за услугу</option>
+                    </select>
+                </div>
+                <div class="add-btns">
+                    <button class="add-btn" onclick="addService(false)">➕ Услугу</button>
+                    <button class="add-cat-btn" onclick="addService(true)">📁 Категорию</button>
+                </div>
+            </div>
+
+            <div id="loader" class="loader">⏳ Загрузка данных...</div>
+            <ul id="priceList"></ul>
+        </div>
+
+        <!-- ВКЛАДКА 2: ПОЛЬЗОВАТЕЛИ -->
+        <div id="usersTab" style="display: none;">
+            <h2>👤 Смена логина и пароля текущего аккаунта</h2>
+            <div class="form-group">
+                <input type="text" id="newCurrentLogin" placeholder="Новый логин">
+                <input type="password" id="newCurrentPass" placeholder="Новый пароль">
+                <button class="btn-primary" onclick="updateCurrentAccount()">💾 Сохранить изменения</button>
+            </div>
+
+            <h2>➕ Добавить нового пользователя</h2>
+            <div class="form-group">
+                <input type="text" id="newNumLogin" placeholder="Логин нового пользователя">
+                <input type="password" id="newNumPass" placeholder="Пароль">
+                <button class="add-btn" onclick="addNewUser()">➕ Добавить пользователя</button>
+            </div>
+
+            <h2>📋 Список пользователей</h2>
+            <div id="usersList"></div>
+        </div>
 
         <a href="index.html" class="nav-link">← Вернуться к калькулятору</a>
     </div>
 </div>
 
 <script>
-    const CORRECT_LOGIN = "admin";
-    const CORRECT_PASS = "12345";
-
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
-    let services = [];
+    // По умолчанию, если данных в БД ещё нет
+    const defaultUsers = [{ login: "admin", pass: "12345" }];
+
+    let cloudData = {
+        services: [],
+        users: []
+    };
+
+    let currentUserIndex = -1;
     let editingIndex = -1;
 
-    function checkAuth() {
-        const l = document.getElementById('loginInput').value.trim();
-        const p = document.getElementById('passInput').value.trim();
-
-        if (l === CORRECT_LOGIN && p === CORRECT_PASS) {
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            loadServicesFromCloud();
-        } else {
-            document.getElementById('authError').style.display = 'block';
-        }
-    }
-
-    async function loadServicesFromCloud() {
+    async function fetchCloudData() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
-            services = data.record;
-            document.getElementById('loader').style.display = 'none';
-            renderList();
+            
+            // Если структура старая (просто массив услуг), пересобираем
+            if (Array.isArray(data.record)) {
+                cloudData.services = data.record;
+                cloudData.users = defaultUsers;
+            } else {
+                cloudData = data.record;
+                if (!cloudData.users || cloudData.users.length === 0) {
+                    cloudData.users = defaultUsers;
+                }
+            }
+            return true;
         } catch (e) {
-            alert("Ошибка загрузки данных из облака");
+            alert("Ошибка подключения к облаку!");
+            return false;
+        }
+    }
+
+    async function checkAuth() {
+        const l = document.getElementById('loginInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+
+        const ok = await fetchCloudData();
+        if (!ok) return;
+
+        const userIdx = cloudData.users.findIndex(u => u.login === l && u.pass === p);
+
+        if (userIdx !== -1) {
+            currentUserIndex = userIdx;
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('loader').style.display = 'none';
+            
+            // Заполняем поля смена логина/пароля текущего юзера
+            document.getElementById('newCurrentLogin').value = cloudData.users[currentUserIndex].login;
+            document.getElementById('newCurrentPass').value = cloudData.users[currentUserIndex].pass;
+
+            renderList();
+            renderUsers();
+        } else {
+            document.getElementById('authError').style.display = 'block';
         }
     }
 
@@ -139,10 +206,10 @@
                     "Content-Type": "application/json",
                     "X-Master-Key": MASTER_KEY
                 },
-                body: JSON.stringify(services)
+                body: JSON.stringify(cloudData)
             });
             status.style.color = "#28a745";
-            status.innerText = "✅ Изменения успешно сохранены для всех!";
+            status.innerText = "✅ Изменения успешно сохранены!";
             setTimeout(() => { status.innerText = ""; }, 3000);
         } catch (e) {
             status.style.color = "#dc3545";
@@ -150,11 +217,26 @@
         }
     }
 
+    function switchTab(tab) {
+        if (tab === 'price') {
+            document.getElementById('priceTab').style.display = 'block';
+            document.getElementById('usersTab').style.display = 'none';
+            document.getElementById('tabPriceBtn').classList.add('active');
+            document.getElementById('tabUsersBtn').classList.remove('active');
+        } else {
+            document.getElementById('priceTab').style.display = 'none';
+            document.getElementById('usersTab').style.display = 'block';
+            document.getElementById('tabPriceBtn').classList.remove('active');
+            document.getElementById('tabUsersBtn').classList.add('active');
+        }
+    }
+
+    /* --- УПРАВЛЕНИЕ ПРАЙС-ЛИСТОМ --- */
     function renderList() {
         const listContainer = document.getElementById('priceList');
         listContainer.innerHTML = '';
 
-        services.forEach((srv, index) => {
+        cloudData.services.forEach((srv, index) => {
             const li = document.createElement('li');
             if (srv.isCategory) li.className = 'cat-item';
 
@@ -229,12 +311,12 @@
         if (!name) return alert('Укажите название!');
 
         if (isCategory) {
-            services.push({ isCategory: true, name });
+            cloudData.services.push({ isCategory: true, name });
         } else {
             const price = Number(priceInput.value.trim());
             const unit = unitSelect.value;
             if (isNaN(price) || price <= 0) return alert('Укажите цену!');
-            services.push({ name, price, unit });
+            cloudData.services.push({ name, price, unit });
         }
 
         nameInput.value = '';
@@ -250,13 +332,13 @@
         const nameVal = document.getElementById(`editName_${index}`).value.trim();
         if (!nameVal) return alert('Заполните название!');
 
-        if (services[index].isCategory) {
-            services[index].name = nameVal;
+        if (cloudData.services[index].isCategory) {
+            cloudData.services[index].name = nameVal;
         } else {
             const priceVal = Number(document.getElementById(`editPrice_${index}`).value.trim());
             const unitVal = document.getElementById(`editUnit_${index}`).value;
             if (isNaN(priceVal) || priceVal <= 0) return alert('Укажите цену!');
-            services[index] = { name: nameVal, price: priceVal, unit: unitVal };
+            cloudData.services[index] = { name: nameVal, price: priceVal, unit: unitVal };
         }
 
         editingIndex = -1;
@@ -266,9 +348,90 @@
 
     function deleteService(index) {
         if (confirm('Удалить позицию?')) {
-            services.splice(index, 1);
+            cloudData.services.splice(index, 1);
             if (editingIndex === index) editingIndex = -1;
             renderList();
+            saveToCloud();
+        }
+    }
+
+    /* --- УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ --- */
+    function renderUsers() {
+        const usersContainer = document.getElementById('usersList');
+        usersContainer.innerHTML = '';
+
+        cloudData.users.forEach((u, index) => {
+            const card = document.createElement('div');
+            card.className = 'user-card';
+
+            const isCurrent = (index === currentUserIndex);
+            const tagText = isCurrent ? '<span class="user-tag">Вы</span>' : '';
+
+            let deleteBtnHTML = '';
+            if (!isCurrent && cloudData.users.length > 1) {
+                deleteBtnHTML = `<button class="btn-sm delete-btn" onclick="deleteUser(${index})">🗑 Удалить</button>`;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <span class="user-name">👤 ${u.login}</span>${tagText}
+                </div>
+                ${deleteBtnHTML}
+            `;
+            usersContainer.appendChild(card);
+        });
+    }
+
+    function updateCurrentAccount() {
+        const newL = document.getElementById('newCurrentLogin').value.trim();
+        const newP = document.getElementById('newCurrentPass').value.trim();
+
+        if (!newL || !newP) {
+            return alert('Логин и пароль не могут быть пустыми!');
+        }
+
+        // Проверка, занят ли логин кем-то другим
+        const exists = cloudData.users.some((u, idx) => u.login === newL && idx !== currentUserIndex);
+        if (exists) {
+            return alert('Пользователь с таким логином уже существует!');
+        }
+
+        cloudData.users[currentUserIndex].login = newL;
+        cloudData.users[currentUserIndex].pass = newP;
+
+        renderUsers();
+        saveToCloud();
+    }
+
+    function addNewUser() {
+        const l = document.getElementById('newNumLogin').value.trim();
+        const p = document.getElementById('newNumPass').value.trim();
+
+        if (!l || !p) {
+            return alert('Заполните логин и пароль для нового пользователя!');
+        }
+
+        const exists = cloudData.users.some(u => u.login === l);
+        if (exists) {
+            return alert('Пользователь с таким логином уже есть!');
+        }
+
+        cloudData.users.push({ login: l, pass: p });
+
+        document.getElementById('newNumLogin').value = '';
+        document.getElementById('newNumPass').value = '';
+
+        renderUsers();
+        saveToCloud();
+    }
+
+    function deleteUser(index) {
+        if (confirm(`Удалить пользователя "${cloudData.users[index].login}"?`)) {
+            cloudData.users.splice(index, 1);
+            if (index < currentUserIndex) {
+                currentUserIndex--;
+            }
+            renderUsers();
             saveToCloud();
         }
     }
