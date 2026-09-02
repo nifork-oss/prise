@@ -321,10 +321,40 @@
     }
 
     function triggerChromePrintPDF() {
-        if (invoiceCart.length === 0) {
-            alert("Добавьте услуги в счёт!");
-            return;
-        }
+    if (invoiceCart.length === 0) {
+        alert("Добавьте услуги в счёт!");
+        return;
+    }
+
+    const client = document.getElementById('clientName').value.trim();
+    const address = document.getElementById('objectAddress').value.trim();
+
+    document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
+    
+    const clientEl = document.getElementById('printClient');
+    clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
+    clientEl.style.display = client ? 'block' : 'none';
+
+    const addressEl = document.getElementById('printAddress');
+    addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
+    addressEl.style.display = address ? 'block' : 'none';
+
+    let rows = '';
+    let total = 0;
+    invoiceCart.forEach(item => {
+        const sum = item.qty * item.price;
+        total += sum;
+        rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+    });
+
+    document.getElementById('printTableBody').innerHTML = rows;
+    document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
+
+    setTimeout(() => {
+        window.print();
+    }, 100);
+}
+
 
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
