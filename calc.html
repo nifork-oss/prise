@@ -77,7 +77,6 @@
         <div id="authError" style="color:red; font-size:12px; margin-top:10px; display:none;">Неверный логин или пароль</div>
     </div>
 </div>
-
 <!-- РАБОЧИЙ КАБИНЕТ -->
 <div id="appScreen" class="container" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -147,7 +146,6 @@
     </table>
     <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
 </div>
-
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
@@ -203,7 +201,6 @@
         const l = document.getElementById('loginInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
         
-        // Гарантированно подтягиваем актуальные данные перед входом
         await loadCloudData();
 
         const user = cloudData.users.find(u => u.login === l && u.pass === p);
@@ -415,4 +412,20 @@
     }
 
     async function deleteHistoryRecord(id) {
-        if (!confirm("Удалить этот сч
+        if (!confirm("Удалить этот счёт из истории?")) return;
+        
+        cloudData.history = cloudData.history.filter(r => r.id !== id);
+        await saveCloudData();
+        renderHistory();
+    }
+
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        invoiceCart = [];
+        renderServices();
+    }
+</script>
+
+</body>
+</html>
