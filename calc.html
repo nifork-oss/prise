@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -58,7 +59,8 @@
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        #printArea { display: none; background: #fff; padding: 20px; }
+        /* ИСПРАВЛЕНИЕ ДЛЯ PDF: Постоянное позиционирование за экраном вместо display: none */
+        #printArea { position: absolute; left: -9999px; top: 0; width: 210mm; background: #fff; padding: 20px; }
     </style>
 </head>
 <body>
@@ -144,6 +146,7 @@
     </table>
     <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
 </div>
+``````html
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
@@ -318,6 +321,7 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕЧАТИ PDF (без скрытия через display:none)
     function triggerChromePrintPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -349,7 +353,6 @@
         document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
         const element = document.getElementById('printArea');
-        element.style.display = 'block';
 
         const opt = {
             margin:       10,
@@ -359,9 +362,7 @@
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(element).set(opt).save().then(() => {
-            element.style.display = 'none';
-        });
+        html2pdf().from(element).set(opt).save();
     }
 
     async function saveInvoiceToHistory() {
@@ -440,3 +441,4 @@
 
 </body>
 </html>
+```
