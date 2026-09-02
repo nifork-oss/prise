@@ -8,7 +8,6 @@ let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }] };
 let isEditingUnlocked = false;
 let currentUserIndex = -1;
 
-// --- ОБЩИЕ ФУНКЦИИ ОБЛАКА ---
 async function loadCloudData(isPricePage = false) {
     try {
         const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -61,7 +60,7 @@ async function saveToCloud() {
     }
 }
 
-// --- ЛОГИКА КАЛЬКУЛЯТОРА (index.html) ---
+// --- КАЛЬКУЛЯТОР (index.html) ---
 function renderServices() {
     const container = document.getElementById('servicesList');
     if (!container) return;
@@ -192,14 +191,30 @@ function closePdfPreview() {
 async function sharePDFInvoice() {
     if (!preparePdfInvoiceData()) return;
     try {
-        const blob = await html2pdf().set({ margin: 10, filename: 'Счет.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).from(document.getElementById('pdfInvoice')).output('blob');
-        const file = new File([blob], 'Счет.pdf', { type: 'application/pdf' });
+        const element = document.getElementById('pdfInvoice');
+        const opt = {
+            margin: 10,
+            filename: 'Счет_на_оплату.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Счет на оплату' });
+            await navigator.share({ files: [file], title: 'Счет на оплату', text: 'Счет на оплату услуг.' });
         } else {
-            const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = 'Счет.pdf'; l.click();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = 'Счет_на_оплату.pdf';
+            link.click();
         }
-    } catch (e) { alert("Ошибка PDF"); }
+        closePdfPreview();
+    } catch (e) {
+        alert("Ошибка генерации PDF");
+    }
 }
 
 function resetAll() {
@@ -210,7 +225,7 @@ function resetAll() {
 }
 
 
-// --- ЛОГИКА ПРАЙСА (price.html) ---
+// --- ПРАЙС-ЛИСТ (price.html) ---
 function renderPriceList() {
     const list = document.getElementById('priceList');
     if (!list) return;
@@ -344,12 +359,28 @@ function openPricePdfPreview() {
 async function sharePDFPrice() {
     preparePdfPriceData();
     try {
-        const blob = await html2pdf().set({ margin: 10, filename: 'Прайс.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).from(document.getElementById('pdfPrice')).output('blob');
-        const file = new File([blob], 'Прайс.pdf', { type: 'application/pdf' });
+        const element = document.getElementById('pdfPrice');
+        const opt = {
+            margin: 10,
+            filename: 'Прайс_лист.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const file = new File([pdfBlob], 'Прайс_лист.pdf', { type: 'application/pdf' });
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Прайс-лист' });
+            await navigator.share({ files: [file], title: 'Прайс-лист', text: 'Актуальный прайс-лист работ и услуг.' });
         } else {
-            const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = 'Прайс.pdf'; l.click();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = 'Прайс_лист.pdf';
+            link.click();
         }
-    } catch (e) { alert("Ошибка PDF"); }
+        closePdfPreview();
+    } catch (e) {
+        alert("Ошибка генерации PDF");
+    }
 }
