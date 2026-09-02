@@ -29,14 +29,16 @@
         .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
         .unit-row input[type="number"] { width: 100px; padding: 7px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
         .unit-row select { padding: 7px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
-        .remove-unit-btn { background: #dc3545; color: white; border: none; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+        .remove-unit-btn { background: #dc3545; color: white; border: none; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .add-variant-btn { background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 8px; font-weight: 600; width: 100%; text-align: center; }
+        .add-variant-btn { background: #28a745; color: white; border: none; padding: 10px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; text-align: center; }
 
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
 
         .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .invoice-item-info { display: flex; align-items: center; gap: 8px; }
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
 
         .action-btns { margin-top: 15px; }
         
@@ -117,7 +119,6 @@
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
-    // Предусмотренные единицы измерения
     const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
     let services = [];
@@ -160,7 +161,7 @@
                 container.appendChild(catHeader);
             } else {
                 if (!selectedVariants[idx]) {
-                    selectedVariants[idx] = [{ qty: '', unit: DEFAULT_UNITS[0] }];
+                    selectedVariants[idx] = [];
                 }
 
                 const card = document.createElement('div');
@@ -199,14 +200,14 @@
                 <select onchange="updateUnit(${srvIdx}, ${varIdx}, this.value)">
                     ${optionsHTML}
                 </select>
-                ${varIdx > 0 ? `<button class="remove-unit-btn" onclick="removeVariant(${srvIdx}, ${varIdx})">✕</button>` : ''}
+                <button class="remove-unit-btn" onclick="removeVariant(${srvIdx}, ${varIdx})" title="Удалить из счёта">✕</button>
             `;
             container.appendChild(row);
         });
     }
 
     function addVariant(srvIdx) {
-        selectedVariants[srvIdx].push({ qty: '', unit: DEFAULT_UNITS[0] });
+        selectedVariants[srvIdx].push({ qty: '1', unit: DEFAULT_UNITS[0] });
         renderUnitRows(srvIdx);
         updateInvoice();
     }
@@ -245,7 +246,7 @@
         services.forEach((srv, idx) => {
             if (srv.isCategory || !selectedVariants[idx]) return;
 
-            selectedVariants[idx].forEach((v) => {
+            selectedVariants[idx].forEach((v, varIdx) => {
                 const qty = parseFloat(v.qty);
                 if (qty > 0) {
                     hasItems = true;
@@ -255,7 +256,10 @@
                     const itemRow = document.createElement('div');
                     itemRow.className = 'invoice-item';
                     itemRow.innerHTML = `
-                        <div>${srv.name} (${qty} ${v.unit})</div>
+                        <div class="invoice-item-info">
+                            <button class="btn-delete-item" onclick="removeVariant(${idx}, ${varIdx})" title="Удалить позицию">✕</button>
+                            <span>${srv.name} (${qty} ${v.unit})</span>
+                        </div>
                         <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
                     `;
                     invoiceItems.appendChild(itemRow);
@@ -264,7 +268,7 @@
         });
 
         if (!hasItems) {
-            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Выберите услуги для формирования счета</div>';
+            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Нажмите «➕ Добавить услугу в счёт» напротив нужной работы</div>';
         }
 
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
@@ -310,7 +314,7 @@
         });
 
         if (!hasItems) {
-            alert("Выберите хотя бы одну услугу!");
+            alert("Добавьте хотя бы одну услугу в счёт!");
             return;
         }
 
