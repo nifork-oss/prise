@@ -11,16 +11,13 @@
         h1 { margin-top: 0; text-align: center; color: #1a1a1a; font-size: 24px; }
         .form-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         input { flex: 1; min-width: 140px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; }
-        input:focus { border-color: #007bff; }
-        button.add-btn { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
-        button.add-btn:hover { background: #0056b3; }
+        button.add-btn { background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         ul { list-style: none; padding: 0; margin: 0; }
         li { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 8px; }
         .item-info { display: flex; justify-content: space-between; width: 100%; margin-right: 15px; font-size: 16px; }
         .item-name { font-weight: 500; }
         .item-price { font-weight: bold; color: #28a745; }
         .delete-btn { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .delete-btn:hover { background: #bd2130; }
         .empty-msg { text-align: center; color: #888; margin: 20px 0; }
         .nav-link { display: block; text-align: center; margin-top: 20px; color: #007bff; text-decoration: none; font-size: 14px; }
     </style>
@@ -28,12 +25,84 @@
 <body>
 
 <div class="container">
-    <h1>Прайс-лист услуг</h1>
+    <h1>Управление прайс-листом</h1>
 
     <div class="form-group">
         <input type="text" id="itemName" placeholder="Название услуги/товара">
         <input type="number" id="itemPrice" placeholder="Цена (руб.)">
         <button class="add-btn" onclick="addItem()">Добавить</button>
+    </div>
+
+    <ul id="priceList"></ul>
+    <div id="emptyMsg" class="empty-msg" style="display: none;">Список пуст</div>
+
+    <a href="index.html" class="nav-link">← Вернуться к калькулятору</a>
+</div>
+
+<script>
+    let items = JSON.parse(localStorage.getItem('my_price_list')) || [];
+
+    function renderList() {
+        const listContainer = document.getElementById('priceList');
+        const emptyMsg = document.getElementById('emptyMsg');
+        listContainer.innerHTML = '';
+
+        if (items.length === 0) {
+            emptyMsg.style.display = 'block';
+            return;
+        } else {
+            emptyMsg.style.display = 'none';
+        }
+
+        items.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-price">${item.price} ₽</span>
+                </div>
+                <button class="delete-btn" onclick="deleteItem(${index})">Удалить</button>
+            `;
+            listContainer.appendChild(li);
+        });
+    }
+
+    function addItem() {
+        const nameInput = document.getElementById('itemName');
+        const priceInput = document.getElementById('itemPrice');
+
+        const name = nameInput.value.trim();
+        const rawPrice = Number(priceInput.value.trim());
+
+        if (!name || isNaN(rawPrice) || rawPrice <= 0) {
+            alert('Введите корректное название и цену!');
+            return;
+        }
+
+        items.push({ 
+            name: name, 
+            rawPrice: rawPrice,
+            price: rawPrice.toLocaleString('ru-RU') 
+        });
+
+        localStorage.setItem('my_price_list', JSON.stringify(items));
+
+        nameInput.value = '';
+        priceInput.value = '';
+        renderList();
+    }
+
+    function deleteItem(index) {
+        items.splice(index, 1);
+        localStorage.setItem('my_price_list', JSON.stringify(items));
+        renderList();
+    }
+
+    renderList();
+</script>
+
+</body>
+</html>
     </div>
 
     <ul id="priceList"></ul>
