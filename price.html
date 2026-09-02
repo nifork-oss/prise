@@ -21,14 +21,25 @@
         button.add-btn:hover { background: #218838; }
 
         ul { list-style: none; padding: 0; margin: 0; }
-        li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 8px; }
+        li { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 8px; }
+        
+        .item-view { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .item-info { display: flex; flex-direction: column; gap: 2px; }
         .item-name { font-weight: 600; font-size: 15px; }
         .item-price { font-size: 14px; color: #28a745; font-weight: bold; }
         
-        .delete-btn { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .item-actions { display: flex; gap: 6px; }
+        .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .edit-btn { background: #ffc107; color: #212529; }
+        .edit-btn:hover { background: #e0a800; }
+        .delete-btn { background: #dc3545; color: white; }
         .delete-btn:hover { background: #c82333; }
+        .save-btn { background: #007bff; color: white; }
+        .save-btn:hover { background: #0069d9; }
+        .cancel-btn { background: #6c757d; color: white; }
 
+        .edit-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        
         .nav-link { display: block; text-align: center; margin-top: 20px; color: #007bff; text-decoration: none; font-size: 14px; font-weight: 500; }
         .empty-msg { text-align: center; color: #888; font-size: 14px; margin: 20px 0; }
     </style>
@@ -38,6 +49,7 @@
 <div class="container">
     <h1>⚙️ Настройка прайс-листа</h1>
 
+    <!-- Форма добавления -->
     <div class="form-group">
         <input type="text" id="serviceName" placeholder="Название услуги / работы">
         <div class="form-row">
@@ -52,6 +64,7 @@
         <button class="add-btn" onclick="addService()">➕ Добавить позицию</button>
     </div>
 
+    <!-- Список услуг -->
     <ul id="priceList"></ul>
     <div id="emptyMsg" class="empty-msg" style="display: none;">Прайс-лист пуст. Добавьте первую услугу выше.</div>
 
@@ -77,6 +90,7 @@
     }
 
     let services = getServices();
+    let editingIndex = -1; // Индекс редактируемой строки (-1 если ничего не редактируется)
 
     function renderList() {
         const listContainer = document.getElementById('priceList');
@@ -91,13 +105,43 @@
 
         services.forEach((srv, index) => {
             const li = document.createElement('li');
-            li.innerHTML = `
-                <div class="item-info">
-                    <span class="item-name">${srv.name}</span>
-                    <span class="item-price">${Number(srv.price).toLocaleString('ru-RU')} ₽ / ${srv.unit || 'шт.'}</span>
-                </div>
-                <button class="delete-btn" onclick="deleteService(${index})">Удалить</button>
-            `;
+
+            if (editingIndex === index) {
+                // Режим редактирования
+                li.innerHTML = `
+                    <div class="edit-form">
+                        <input type="text" id="editName_${index}" value="${srv.name}">
+                        <div class="form-row">
+                            <input type="number" id="editPrice_${index}" value="${srv.price}">
+                            <select id="editUnit_${index}">
+                                <option value="м²" ${srv.unit === 'м²' ? 'selected' : ''}>за м²</option>
+                                <option value="м.п." ${srv.unit === 'м.п.' ? 'selected' : ''}>за м.п.</option>
+                                <option value="шт." ${srv.unit === 'шт.' ? 'selected' : ''}>за шт.</option>
+                                <option value="услуга" ${srv.unit === 'услуга' ? 'selected' : ''}>за услугу</option>
+                            </select>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-sm save-btn" onclick="saveEdit(${index})">💾 Сохранить</button>
+                            <button class="btn-sm cancel-btn" onclick="cancelEdit()">Отмена</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Обычный режим просмотра
+                li.innerHTML = `
+                    <div class="item-view">
+                        <div class="item-info">
+                            <span class="item-name">${srv.name}</span>
+                            <span class="item-price">${Number(srv.price).toLocaleString('ru-RU')} ₽ / ${srv.unit || 'шт.'}</span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-sm edit-btn" onclick="startEdit(${index})">✏️</button>
+                            <button class="btn-sm delete-btn" onclick="deleteService(${index})">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }
+
             listContainer.appendChild(li);
         });
     }
@@ -117,15 +161,46 @@
         }
 
         services.push({ name, price, unit });
-        localStorage.setItem('my_price_list', JSON.stringify(services));
+        saveAndRender();
 
         nameInput.value = '';
         priceInput.value = '';
+    }
+
+    function startEdit(index) {
+        editingIndex = index;
         renderList();
     }
 
+    function cancelEdit() {
+        editingIndex = -1;
+        renderList();
+    }
+
+    function saveEdit(index) {
+        const nameVal = document.getElementById(`editName_${index}`).value.trim();
+        const priceVal = Number(document.getElementById(`editPrice_${index}`).value.trim());
+        const unitVal = document.getElementById(`editUnit_${index}`).value;
+
+        if (!nameVal || isNaN(priceVal) || priceVal <= 0) {
+            alert('Заполните название и корректную цену!');
+            return;
+        }
+
+        services[index] = { name: nameVal, price: priceVal, unit: unitVal };
+        editingIndex = -1;
+        saveAndRender();
+    }
+
     function deleteService(index) {
-        services.splice(index, 1);
+        if (confirm('Удалить эту позицию?')) {
+            services.splice(index, 1);
+            if (editingIndex === index) editingIndex = -1;
+            saveAndRender();
+        }
+    }
+
+    function saveAndRender() {
         localStorage.setItem('my_price_list', JSON.stringify(services));
         renderList();
     }
