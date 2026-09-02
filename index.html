@@ -13,7 +13,6 @@
         h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
         
         .nav-btn { display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-align: center; }
-        .nav-btn:hover { background: #0056b3; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
@@ -31,14 +30,13 @@
 
         .invoice-preview { background: #f8f9fa; border: 2px dashed #007bff; padding: 15px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
-        .invoice-item:last-child { border-bottom: none; }
 
         .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .btn { padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; text-align: center; }
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
 
-        .empty-msg { text-align: center; color: #888; font-size: 14px; margin: 20px 0; }
+        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
@@ -46,7 +44,7 @@
 <div class="container">
     <h1>📐 Калькулятор работ и услуг</h1>
 
-    <a href="price.html" class="nav-btn">⚙️ Управление прайс-листом</a>
+    <a href="price.html" class="nav-btn">🔒 Управление прайс-листом</a>
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
@@ -58,8 +56,8 @@
     </div>
 
     <h2>🛠 Выберите услуги:</h2>
+    <div id="loader" class="loader">⏳ Загрузка актуального прайс-листа...</div>
     <div id="servicesList"></div>
-    <div id="emptyServicesMsg" class="empty-msg" style="display:none;">Прайс-лист пуст. Перейдите в настройки прайса для добавления услуг.</div>
 
     <h2>🧾 Предпросмотр счета</h2>
     <div class="invoice-preview" id="invoiceArea">
@@ -75,65 +73,36 @@
 </div>
 
 <script>
-    // Исходный полная структура с категориями
-    const defaultServices = [
-        { isCategory: true, name: "Подготовительные работы" },
-        { name: "Монтаж фасадной сетки", price: 500, unit: "м²" },
-        { name: "Армирование стен фасадной сеткой", price: 450, unit: "м²" },
-        { name: "Монтаж стеклохолста", price: 500, unit: "м²" },
-        { name: "Наклейка стеклохолста на шпатлевку", price: 400, unit: "м²" },
-        { name: "Нанесение грунт-краски", price: 200, unit: "м²" },
-        { name: "Грунт-краска вместо клея", price: 250, unit: "м²" },
-        { name: "Шпатлевание и грунтовка", price: 500, unit: "м²" },
-        { name: "Финишное шпатлевание", price: 500, unit: "м²" },
-        { name: "Финишное выравнивание", price: 500, unit: "м²" },
-        
-        { isCategory: true, name: "Покрасочные работы" },
-        { name: "Нанесение праймера", price: 300, unit: "м²" },
-        { name: "Грунтовка перед покраской", price: 200, unit: "м²" },
-        { name: "Покраска стен в 2 слоя", price: 500, unit: "м²" },
-        { name: "Покраска лепнины", price: 500, unit: "м.п." },
-        { name: "Покраска плинтуса и молдингов", price: 400, unit: "м.п." },
+    const BIN_ID = "6a98820eda38895dfe310361";
+    const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
-        { isCategory: true, name: "Монтажные работы" },
-        { name: "Монтаж карниза", price: 500, unit: "м.п." },
-        { name: "Установка потолочных карнизов", price: 600, unit: "м.п." },
-        { name: "Монтаж молдинга", price: 500, unit: "м.п." },
-        { name: "Установка декоративных молдингов", price: 550, unit: "м.п." }
-    ];
+    let services = [];
 
-    function getServices() {
-        const stored = localStorage.getItem('my_price_list');
-        if (!stored) {
-            localStorage.setItem('my_price_list', JSON.stringify(defaultServices));
-            return defaultServices;
+    async function loadServicesFromCloud() {
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                headers: { "X-Master-Key": MASTER_KEY }
+            });
+            const data = await res.json();
+            services = data.record;
+            document.getElementById('loader').style.display = 'none';
+            renderServices();
+        } catch (e) {
+            document.getElementById('loader').innerText = "Ошибка загрузки прайса.";
         }
-        return JSON.parse(stored);
     }
 
     function renderServices() {
-        const services = getServices();
         const container = document.getElementById('servicesList');
-        const emptyMsg = document.getElementById('emptyServicesMsg');
-
         container.innerHTML = '';
-
-        if (services.length === 0) {
-            emptyMsg.style.display = 'block';
-            updateInvoice();
-            return;
-        }
-        emptyMsg.style.display = 'none';
 
         services.forEach((srv, idx) => {
             if (srv.isCategory) {
-                // Вывод заголовка категории
                 const catHeader = document.createElement('div');
                 catHeader.className = 'category-header';
                 catHeader.innerText = srv.name;
                 container.appendChild(catHeader);
             } else {
-                // Вывод отдельной услуги
                 const card = document.createElement('div');
                 card.className = 'service-card';
                 const unitText = srv.unit ? ` / ${srv.unit}` : '';
@@ -155,7 +124,6 @@
     }
 
     function updateInvoice() {
-        const services = getServices();
         const invoiceItems = document.getElementById('invoiceItems');
         const invoiceInfo = document.getElementById('invoiceInfo');
         const clientName = document.getElementById('clientName').value.trim();
@@ -171,7 +139,7 @@
         invoiceInfo.innerHTML = infoHTML;
 
         services.forEach((srv, idx) => {
-            if (srv.isCategory) return; // категории пропускаем при расчете
+            if (srv.isCategory) return;
 
             const qtyInput = document.getElementById(`qty_${idx}`);
             const qty = qtyInput ? parseFloat(qtyInput.value) : 0;
@@ -206,7 +174,7 @@
         updateInvoice();
     }
 
-    renderServices();
+    loadServicesFromCloud();
 </script>
 
 </body>
