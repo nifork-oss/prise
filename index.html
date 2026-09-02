@@ -42,8 +42,6 @@
         .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-primary:active { background: #0056b3; }
         .btn-success { background: #28a745; color: white; }
         .btn-success:active { background: #218838; }
         .btn-danger { background: #dc3545; color: white; }
@@ -80,7 +78,7 @@
     </div>
 
     <div class="action-btns">
-        <button type="button" id="sharePdfBtn" class="btn btn-success">📤 Сохранить / Поделиться счётом (PDF)</button>
+        <button type="button" id="sharePdfBtn" class="btn btn-success">📄 Скачать / Сохранить счёт в PDF</button>
         <button type="button" id="resetBtn" class="btn btn-danger">❌ Очистить всё</button>
     </div>
 </div>
@@ -278,29 +276,36 @@
         });
 
         const printWin = window.open('', '_blank');
+        if (!printWin) {
+            alert("Разрешите всплывающие окна для формирования PDF!");
+            return;
+        }
+
         printWin.document.write(`
             <html>
             <head><title>Счет на оплату</title></head>
-            <body style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+            <body style="font-family: Arial, sans-serif; padding: 25px; color: #333; max-width: 800px; margin: 0 auto;">
                 <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
                 <p><b>Дата:</b> ${new Date().toLocaleDateString('ru-RU')}</p>
                 ${client ? `<p><b>Заказчик:</b> ${client}</p>` : ''}
                 ${address ? `<p><b>Адрес объекта:</b> ${address}</p>` : ''}
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                     <thead>
                         <tr style="background-color: #f2f2f2;">
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Наименование</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Кол-во</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Ед.</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Цена</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Сумма</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
-                <h3 style="text-align: right; margin-top: 20px;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+                <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
                 <script>
-                    window.onload = function() { window.print(); };
+                    window.onload = function() {
+                        setTimeout(() => { window.print(); }, 300);
+                    };
                 <\/script>
             </body>
             </html>
