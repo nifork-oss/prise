@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор услуг</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
@@ -12,56 +11,61 @@
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
         h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
+        
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; }
+        .nav-btn:hover { background: #0056b3; }
+
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
         .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
+
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
         .service-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .service-price { color: #28a745; font-weight: bold; }
+        .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
+        
         .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
-        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: white; flex: 1; }
-        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; }
+        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
+
+        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; text-align: center; }
+        .add-to-cart-btn:active { background: #218838; }
+
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
+
         .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+
         .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
+        
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
         .btn-primary { background: #007bff; color: white; }
-        .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
-        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        .pdf-offscreen { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial; color: #333; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: left; }
-        .pdf-table th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📐 Калькулятор услуг</h1>
+
     <a href="price.html" class="nav-btn">📋 Прайс-лист услуг</a>
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
-        <input type="text" id="clientName" placeholder="Иванов И.И." oninput="updateInvoiceInfo()">
+        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoiceInfo()">
     </div>
     <div class="form-group">
         <label>Адрес объекта</label>
-        <input type="text" id="objectAddress" placeholder="г. Москва" oninput="updateInvoiceInfo()">
+        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoiceInfo()">
     </div>
 
     <h2>🛠 Выберите услуги:</h2>
-    <div id="loader" class="loader">⏳ Загрузка прайса...</div>
+    <div id="loader" class="loader">⏳ Загрузка актуального прайс-листа...</div>
     <div id="servicesList"></div>
 
     <h2>🧾 Предпросмотр счета</h2>
@@ -72,41 +76,209 @@
     </div>
 
     <div class="action-btns">
-        <button class="btn btn-primary" onclick="openPdfPreview()">👁 Предпросмотр счета (PDF)</button>
-        <button class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
+        <button type="button" class="btn btn-primary" onclick="sharePDFInvoice()">📤 Отправить счёт в мессенджер</button>
+        <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
     </div>
 </div>
 
-<div class="modal-overlay" id="pdfModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>👁 Предпросмотр документа</h3>
-            <button onclick="closePdfPreview()" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
-        </div>
-        <div class="modal-body" id="pdfPreviewContainer"></div>
-        <div class="modal-footer">
-            <button class="btn btn-success" onclick="sharePDFInvoice()">📤 Поделиться / Скачать PDF</button>
-            <button class="btn btn-danger" onclick="closePdfPreview()" style="width: 120px;">Закрыть</button>
-        </div>
-    </div>
-</div>
+<script>
+    const BIN_ID = "6a98820eda38895dfe310361";
+    const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
+    const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
-<div id="pdfInvoice" class="pdf-offscreen">
-    <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
-        <div style="font-size: 20px; font-weight: bold; color: #007bff;">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
-        <div id="pdfDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
-    </div>
-    <div id="pdfClientDetails" style="font-size: 13px; margin-bottom: 15px;"></div>
-    <table class="pdf-table">
-        <thead><tr><th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr></thead>
-        <tbody id="pdfTableBody"></tbody>
-    </table>
-    <div style="text-align: right; margin-top: 15px; font-size: 16px; font-weight: bold;">
-        ИТОГО К ОПЛАТЕ: <span id="pdfTotalSum"></span> ₽
-    </div>
-</div>
+    let services = [];
+    let invoiceCart = []; 
 
-<script src="app.js"></script>
-<script>loadCloudData(false);</script>
+    window.addEventListener('DOMContentLoaded', () => {
+        loadServicesFromCloud();
+    });
+
+    async function loadServicesFromCloud() {
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                headers: { "X-Master-Key": MASTER_KEY }
+            });
+            const data = await res.json();
+            
+            if (data.record) {
+                if (Array.isArray(data.record)) {
+                    services = data.record;
+                } else {
+                    services = data.record.services || [];
+                }
+            }
+
+            const loader = document.getElementById('loader');
+            if (loader) loader.style.display = 'none';
+            renderServices();
+        } catch (e) {
+            const loader = document.getElementById('loader');
+            if (loader) loader.innerText = "Ошибка загрузки прайса.";
+        }
+    }
+
+    function renderServices() {
+        const container = document.getElementById('servicesList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!services || services.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст. Добавьте услуги в разделе прайса.</div>';
+            return;
+        }
+
+        services.forEach((srv, idx) => {
+            if (srv.isCategory) {
+                const catHeader = document.createElement('div');
+                catHeader.className = 'category-header';
+                catHeader.innerText = srv.name;
+                container.appendChild(catHeader);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                
+                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+
+                card.innerHTML = `
+                    <div class="service-title">
+                        <span>${srv.name}</span>
+                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                    <div class="unit-row">
+                        <input type="number" id="input_qty_${idx}" min="0" value="1" placeholder="Кол-во">
+                        <select id="select_unit_${idx}">
+                            ${unitsOptions}
+                        </select>
+                    </div>
+                    <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                `;
+                container.appendChild(card);
+            }
+        });
+
+        renderInvoice();
+    }
+
+    function addToInvoice(idx) {
+        const qtyInput = document.getElementById(`input_qty_${idx}`);
+        const unitSelect = document.getElementById(`select_unit_${idx}`);
+        if (!qtyInput || !unitSelect) return;
+
+        const qty = parseFloat(qtyInput.value);
+        const unit = unitSelect.value;
+        const srv = services[idx];
+
+        if (isNaN(qty) || qty <= 0) {
+            alert('Укажите количество больше нуля!');
+            return;
+        }
+
+        invoiceCart.push({
+            name: srv.name,
+            price: Number(srv.price),
+            qty: qty,
+            unit: unit
+        });
+
+        renderInvoice();
+    }
+
+    function removeFromInvoice(cartIdx) {
+        invoiceCart.splice(cartIdx, 1);
+        renderInvoice();
+    }
+
+    function updateInvoiceInfo() {
+        const info = document.getElementById('invoiceInfo');
+        if (!info) return;
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+
+        let infoHTML = '';
+        if (client) infoHTML += `<b>Заказчик:</b> ${client}<br>`;
+        if (address) infoHTML += `<b>Адрес:</b> ${address}`;
+        info.innerHTML = infoHTML;
+    }
+
+    function renderInvoice() {
+        const invoiceItems = document.getElementById('invoiceItems');
+        if (!invoiceItems) return;
+        invoiceItems.innerHTML = '';
+        let total = 0;
+
+        updateInvoiceInfo();
+
+        if (invoiceCart.length === 0) {
+            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Счет пуст</div>';
+            document.getElementById('totalSum').textContent = '0';
+            return;
+        }
+
+        invoiceCart.forEach((item, idx) => {
+            const itemSum = item.qty * item.price;
+            total += itemSum;
+
+            const itemRow = document.createElement('div');
+            itemRow.className = 'invoice-item';
+            itemRow.innerHTML = `
+                <div class="invoice-item-info">
+                    <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
+                    <span>${item.name} (${item.qty} ${item.unit})</span>
+                </div>
+                <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
+            `;
+            invoiceItems.appendChild(itemRow);
+        });
+
+        document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
+    }
+
+    async function sharePDFInvoice() {
+        if (invoiceCart.length === 0) {
+            alert("Добавьте услуги в счёт!");
+            return;
+        }
+
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+        
+        let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
+        text += `📅 Дата: ${new Date().toLocaleDateString('ru-RU')}\n`;
+        if (client) text += `👤 Заказчик: ${client}\n`;
+        if (address) text += `📍 Адрес: ${address}\n`;
+        text += "-----------------------------------\n";
+        
+        let total = 0;
+        invoiceCart.forEach(item => {
+            const sum = item.qty * item.price;
+            total += sum;
+            text += `• ${item.name}\n  ${item.qty} ${item.unit} × ${item.price.toLocaleString('ru-RU')} ₽ = ${sum.toLocaleString('ru-RU')} ₽\n`;
+        });
+        
+        text += "-----------------------------------\n";
+        text += `💰 ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Счет на оплату', text: text });
+                return;
+            } catch (e) {}
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Текст счёта скопирован в буфер обмена!");
+        }).catch(() => {
+            prompt("Скопируйте текст счёта:", text);
+        });
+    }
+
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        invoiceCart = [];
+        renderServices();
+    }
+</script>
+
 </body>
 </html>
