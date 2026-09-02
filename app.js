@@ -155,32 +155,55 @@ function renderInvoice() {
     document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
 }
 
-function preparePdfInvoiceData() {
-    if (invoiceCart.length === 0) {
-        alert("Добавьте услуги в счёт!");
-        return false;
-    }
+function generateInvoiceHTML() {
+    if (invoiceCart.length === 0) return null;
     const client = document.getElementById('clientName').value.trim();
     const address = document.getElementById('objectAddress').value.trim();
-    const tbody = document.getElementById('pdfTableBody');
-    tbody.innerHTML = '';
+    
+    let rows = '';
     let total = 0;
-
     invoiceCart.forEach(item => {
         const sum = item.qty * item.price;
         total += sum;
-        tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.unit}</td><td>${item.price.toLocaleString('ru-RU')} ₽</td><td>${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+        rows += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.unit}</td><td>${item.price.toLocaleString('ru-RU')} ₽</td><td>${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
     });
 
-    document.getElementById('pdfDate').innerText = `Дата: ${new Date().toLocaleDateString('ru-RU')}`;
-    document.getElementById('pdfClientDetails').innerHTML = `${client ? `<b>Заказчик:</b> ${client}<br>` : ''}${address ? `<b>Адрес:</b> ${address}` : ''}`;
-    document.getElementById('pdfTotalSum').innerText = total.toLocaleString('ru-RU');
-    return true;
+    return `
+        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; width:100%;">
+            <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
+                <div style="font-size: 18px; font-weight: bold; color: #007bff;">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
+                <div style="font-size: 12px; color: #777; margin-top: 4px;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
+            </div>
+            <div style="font-size: 13px; margin-bottom: 15px;">
+                ${client ? `<b>Заказчик:</b> ${client}<br>` : ''}
+                ${address ? `<b>Адрес объекта:</b> ${address}` : ''}
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Наименование</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Кол-во</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Ед.</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Цена</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div style="text-align: right; margin-top: 15px; font-size: 15px; font-weight: bold;">
+                ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽
+            </div>
+        </div>
+    `;
 }
 
 function openPdfPreview() {
-    if (!preparePdfInvoiceData()) return;
-    document.getElementById('pdfPreviewContainer').innerHTML = document.getElementById('pdfInvoice').innerHTML;
+    const html = generateInvoiceHTML();
+    if (!html) {
+        alert("Добавьте услуги в счёт!");
+        return;
+    }
+    document.getElementById('pdfPreviewContainer').innerHTML = html;
     document.getElementById('pdfModal').style.display = 'flex';
 }
 
@@ -189,9 +212,19 @@ function closePdfPreview() {
 }
 
 async function sharePDFInvoice() {
-    if (!preparePdfInvoiceData()) return;
+    const html = generateInvoiceHTML();
+    if (!html) return;
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '700px';
+    tempContainer.style.background = '#fff';
+    tempContainer.innerHTML = html;
+    document.body.appendChild(tempContainer);
+
     try {
-        const element = document.getElementById('pdfInvoice');
         const opt = {
             margin: 10,
             filename: 'Счет_на_оплату.pdf',
@@ -200,20 +233,12 @@ async function sharePDFInvoice() {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Счет на оплату', text: 'Счет на оплату услуг.' });
-        } else {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(pdfBlob);
-            link.download = 'Счет_на_оплату.pdf';
-            link.click();
-        }
+        await html2pdf().set(opt).from(tempContainer).save();
+        document.body.removeChild(tempContainer);
         closePdfPreview();
     } catch (e) {
-        alert("Ошибка генерации PDF");
+        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+        alert("Не удалось сгенерировать PDF. Попробуйте еще раз.");
     }
 }
 
@@ -336,30 +361,57 @@ function deleteUser(index) {
     }
 }
 
-function preparePdfPriceData() {
-    const tbody = document.getElementById('pdfPriceTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+function generatePriceHTML() {
+    let rows = '';
     cloudData.services.forEach(srv => {
         if (srv.isCategory) {
-            tbody.innerHTML += `<tr><td colspan="2" style="background:#e9ecef; font-weight:bold;">${srv.name}</td></tr>`;
+            rows += `<tr><td colspan="2" style="background:#e9ecef; font-weight:bold;">${srv.name}</td></tr>`;
         } else {
-            tbody.innerHTML += `<tr><td>${srv.name}</td><td><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td></tr>`;
+            rows += `<tr><td>${srv.name}</td><td><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td></tr>`;
         }
     });
-    document.getElementById('pdfPriceDate').innerText = `Актуально на: ${new Date().toLocaleDateString('ru-RU')}`;
+
+    return `
+        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; width:100%;">
+            <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
+                <div style="font-size: 18px; font-weight: bold; color: #007bff;">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
+                <div style="font-size: 12px; color: #777; margin-top: 4px;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</div>
+            </div>
+            <div style="background: #f0f7ff; border-left: 3px solid #007bff; padding: 8px; font-size: 11px; margin-bottom: 15px; line-height: 1.4;">
+                <b>Правило погонных метров:</b> Стоимость за пог. м равна стоимости за м² для элементов короче 1 метра.
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Наименование</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left; width: 120px;">Цена</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
 }
 
 function openPricePdfPreview() {
-    preparePdfPriceData();
-    document.getElementById('pdfPreviewContainer').innerHTML = document.getElementById('pdfPrice').innerHTML;
+    const html = generatePriceHTML();
+    document.getElementById('pdfPreviewContainer').innerHTML = html;
     document.getElementById('pdfModal').style.display = 'flex';
 }
 
 async function sharePDFPrice() {
-    preparePdfPriceData();
+    const html = generatePriceHTML();
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '700px';
+    tempContainer.style.background = '#fff';
+    tempContainer.innerHTML = html;
+    document.body.appendChild(tempContainer);
+
     try {
-        const element = document.getElementById('pdfPrice');
         const opt = {
             margin: 10,
             filename: 'Прайс_лист.pdf',
@@ -368,19 +420,11 @@ async function sharePDFPrice() {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        const file = new File([pdfBlob], 'Прайс_лист.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Прайс-лист', text: 'Актуальный прайс-лист работ и услуг.' });
-        } else {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(pdfBlob);
-            link.download = 'Прайс_лист.pdf';
-            link.click();
-        }
-        closePdfPreview();
+        await html2pdf().set(opt).from(tempContainer).save();
+        document.body.removeChild(tempContainer);
+        document.getElementById('pdfModal').style.display = 'none';
     } catch (e) {
-        alert("Ошибка генерации PDF");
+        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+        alert("Не удалось сгенерировать PDF. Попробуйте еще раз.");
     }
 }
