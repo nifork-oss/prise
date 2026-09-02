@@ -10,9 +10,12 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1, h2, h3 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1, h2, h3, h4 { text-align: center; color: #1a1a1a; margin-top: 0; }
         
         .nav-btn { display: inline-block; text-decoration: none; background: #6c757d; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; margin-bottom: 15px; }
+
+        .info-box { background: #eef6ff; border-left: 4px solid #007bff; padding: 12px 15px; border-radius: 6px; font-size: 13px; line-height: 1.5; color: #2c3e50; margin-bottom: 20px; }
+        .info-box b { color: #0056b3; }
 
         .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
         .category-item { background: #e9ecef; font-weight: bold; font-size: 15px; margin-top: 15px; }
@@ -41,9 +44,10 @@
 
         #pdfPrice { display: none; }
         .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
-        .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px; }
         .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pdf-info-box { background: #f0f7ff; border-left: 3px solid #007bff; padding: 8px 12px; font-size: 11px; margin-bottom: 15px; color: #333; line-height: 1.4; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
         .pdf-table th { background-color: #f2f2f2; }
     </style>
@@ -56,9 +60,15 @@
 
     <button class="btn btn-success" onclick="sharePDFPrice()">📋 Отправить актуальный прайс (PDF)</button>
 
+    <!-- Пояснительный блок -->
+    <div class="info-box">
+        💡 <b>Правило расчёта погонных метров:</b><br>
+        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах рассчитываются элементы и конструкции, у которых один или несколько габаритных параметров (например, ширина или высота) составляют меньше 1 метра (колонны, откосы, плинтусы, карнизы, узкие ниши и прочие конструкции).
+    </div>
+
     <div id="priceList">⏳ Загрузка прайс-листа...</div>
 
-    <!-- Авторизованный раздел редактирования -->
+    <!-- Раздел редактирования прайса с логином и паролем -->
     <div class="edit-section">
         <h3>🔒 Вход для редактирования прайса</h3>
 
@@ -75,7 +85,7 @@
                 <button class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')">👥 Пользователи</button>
             </div>
 
-            <!-- Вкладка Услуги -->
+            <!-- Вкладка Редактирование прайса -->
             <div id="priceTab">
                 <div class="form-box">
                     <h4 style="margin-top:0;">➕ Добавить позицию</h4>
@@ -88,7 +98,7 @@
                     </div>
                     <div class="form-group">
                         <label>Название</label>
-                        <input type="text" id="nameInput" placeholder="Например: Шпаклевка стен">
+                        <input type="text" id="nameInput" placeholder="Например: Шпатлевание стен">
                     </div>
                     <div id="serviceFields">
                         <div class="form-group">
@@ -100,7 +110,7 @@
                 </div>
             </div>
 
-            <!-- Вкладка Пользователи -->
+            <!-- Вкладка Управление пользователями -->
             <div id="usersTab" style="display: none;">
                 <h4>👤 Смена своего логина и пароля</h4>
                 <div class="form-box">
@@ -125,11 +135,17 @@
     </div>
 </div>
 
+<!-- Шаблон генерации PDF документов -->
 <div id="pdfPrice" class="pdf-template">
     <div class="pdf-header">
         <div class="pdf-title">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
         <div id="pdfPriceDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
     </div>
+
+    <div class="pdf-info-box">
+        <b>Правило расчёта погонных метров:</b> Стоимость за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах рассчитываются элементы, у которых один или несколько габаритных параметров менее 1 метра (колонны, откосы, плинтусы, карнизы, узкие ниши и прочее).
+    </div>
+
     <table class="pdf-table">
         <thead>
             <tr>
