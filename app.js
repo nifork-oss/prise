@@ -90,7 +90,7 @@ function renderServices() {
                     <input type="number" id="input_qty_${idx}" min="0" value="1" placeholder="Кол-во">
                     <select id="select_unit_${idx}">${unitsOptions}</select>
                 </div>
-                <button class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
             `;
             container.appendChild(card);
         }
@@ -99,8 +99,12 @@ function renderServices() {
 }
 
 function addToInvoice(idx) {
-    const qty = parseFloat(document.getElementById(`input_qty_${idx}`).value);
-    const unit = document.getElementById(`select_unit_${idx}`).value;
+    const qtyInput = document.getElementById(`input_qty_${idx}`);
+    const unitSelect = document.getElementById(`select_unit_${idx}`);
+    if (!qtyInput || !unitSelect) return;
+
+    const qty = parseFloat(qtyInput.value);
+    const unit = unitSelect.value;
     const srv = services[idx];
 
     if (isNaN(qty) || qty <= 0) {
@@ -120,8 +124,10 @@ function removeFromInvoice(idx) {
 function updateInvoiceInfo() {
     const info = document.getElementById('invoiceInfo');
     if (!info) return;
-    const client = document.getElementById('clientName').value.trim();
-    const address = document.getElementById('objectAddress').value.trim();
+    const clientInput = document.getElementById('clientName');
+    const addressInput = document.getElementById('objectAddress');
+    const client = clientInput ? clientInput.value.trim() : '';
+    const address = addressInput ? addressInput.value.trim() : '';
     info.innerHTML = `${client ? `<b>Заказчик:</b> ${client}<br>` : ''}${address ? `<b>Адрес:</b> ${address}` : ''}`;
 }
 
@@ -134,7 +140,8 @@ function renderInvoice() {
 
     if (invoiceCart.length === 0) {
         container.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Счет пуст</div>';
-        document.getElementById('totalSum').textContent = '0';
+        const totalElem = document.getElementById('totalSum');
+        if (totalElem) totalElem.textContent = '0';
         return;
     }
 
@@ -145,20 +152,23 @@ function renderInvoice() {
         row.className = 'invoice-item';
         row.innerHTML = `
             <div class="invoice-item-info">
-                <button class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
+                <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
                 <span>${item.name} (${item.qty} ${item.unit})</span>
             </div>
             <div><b>${sum.toLocaleString('ru-RU')} ₽</b></div>
         `;
         container.appendChild(row);
     });
-    document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
+    const totalElem = document.getElementById('totalSum');
+    if (totalElem) totalElem.textContent = total.toLocaleString('ru-RU');
 }
 
 function generateInvoiceText() {
     if (invoiceCart.length === 0) return null;
-    const client = document.getElementById('clientName').value.trim();
-    const address = document.getElementById('objectAddress').value.trim();
+    const clientElem = document.getElementById('clientName');
+    const addressElem = document.getElementById('objectAddress');
+    const client = clientElem ? clientElem.value.trim() : '';
+    const address = addressElem ? addressElem.value.trim() : '';
     
     let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
     text += `📅 Дата: ${new Date().toLocaleDateString('ru-RU')}\n`;
@@ -203,8 +213,10 @@ async function sharePDFInvoice() {
 }
 
 function resetAll() {
-    document.getElementById('clientName').value = '';
-    document.getElementById('objectAddress').value = '';
+    const clientElem = document.getElementById('clientName');
+    const addressElem = document.getElementById('objectAddress');
+    if (clientElem) clientElem.value = '';
+    if (addressElem) addressElem.value = '';
     invoiceCart = [];
     renderServices();
 }
@@ -220,18 +232,22 @@ function renderPriceList() {
         const div = document.createElement('div');
         if (item.isCategory) {
             div.className = 'service-item category-item';
-            div.innerHTML = `<span>📁 <b>${item.name}</b></span>${isEditingUnlocked ? `<button class="btn btn-danger" onclick="deletePriceItem(${index})">✕</button>` : ''}`;
+            div.innerHTML = `<span>📁 <b>${item.name}</b></span>${isEditingUnlocked ? `<button type="button" class="btn btn-danger" onclick="deletePriceItem(${index})">✕</button>` : ''}`;
         } else {
             div.className = 'service-item';
-            div.innerHTML = `<span>${item.name}</span><span><b>${Number(item.price).toLocaleString('ru-RU')} ₽</b>${isEditingUnlocked ? `<button class="btn btn-danger" style="margin-left:8px;" onclick="deletePriceItem(${index})">✕</button>` : ''}</span>`;
+            div.innerHTML = `<span>${item.name}</span><span><b>${Number(item.price).toLocaleString('ru-RU')} ₽</b>${isEditingUnlocked ? `<button type="button" class="btn btn-danger" style="margin-left:8px;" onclick="deletePriceItem(${index})">✕</button>` : ''}</span>`;
         }
         list.appendChild(div);
     });
 }
 
 function checkAuth() {
-    const l = document.getElementById('loginInput').value.trim();
-    const p = document.getElementById('passInput').value.trim();
+    const loginElem = document.getElementById('loginInput');
+    const passElem = document.getElementById('passInput');
+    if (!loginElem || !passElem) return;
+
+    const l = loginElem.value.trim();
+    const p = passElem.value.trim();
     const idx = cloudData.users.findIndex(u => u.login === l && u.pass === p);
 
     if (idx !== -1) {
@@ -244,36 +260,49 @@ function checkAuth() {
         renderPriceList();
         renderUsersList();
     } else {
-        document.getElementById('authError').style.display = 'block';
+        const err = document.getElementById('authError');
+        if (err) err.style.display = 'block';
     }
 }
 
 function switchTab(tab) {
-    document.getElementById('priceTab').style.display = tab === 'price' ? 'block' : 'none';
-    document.getElementById('usersTab').style.display = tab === 'users' ? 'block' : 'none';
-    document.getElementById('tabPriceBtn').classList.toggle('active', tab === 'price');
-    document.getElementById('tabUsersBtn').classList.toggle('active', tab === 'users');
+    const priceTab = document.getElementById('priceTab');
+    const usersTab = document.getElementById('usersTab');
+    const tabPriceBtn = document.getElementById('tabPriceBtn');
+    const tabUsersBtn = document.getElementById('tabUsersBtn');
+
+    if (priceTab) priceTab.style.display = tab === 'price' ? 'block' : 'none';
+    if (usersTab) usersTab.style.display = tab === 'users' ? 'block' : 'none';
+    if (tabPriceBtn) tabPriceBtn.classList.toggle('active', tab === 'price');
+    if (tabUsersBtn) tabUsersBtn.classList.toggle('active', tab === 'users');
 }
 
 function toggleFormType() {
-    const type = document.getElementById('typeSelect').value;
-    document.getElementById('serviceFields').style.display = type === 'service' ? 'block' : 'none';
+    const typeSelect = document.getElementById('typeSelect');
+    const serviceFields = document.getElementById('serviceFields');
+    if (!typeSelect || !serviceFields) return;
+    serviceFields.style.display = typeSelect.value === 'service' ? 'block' : 'none';
 }
 
 function addPriceItem() {
-    const type = document.getElementById('typeSelect').value;
-    const name = document.getElementById('nameInput').value.trim();
+    const typeSelect = document.getElementById('typeSelect');
+    const nameInput = document.getElementById('nameInput');
+    const priceInput = document.getElementById('priceInput');
+    if (!typeSelect || !nameInput) return;
+
+    const type = typeSelect.value;
+    const name = nameInput.value.trim();
     if (!name) return alert('Введите название');
 
     if (type === 'category') {
         cloudData.services.push({ name, isCategory: true });
     } else {
-        const price = parseFloat(document.getElementById('priceInput').value);
+        const price = parseFloat(priceInput ? priceInput.value : 0);
         if (isNaN(price)) return alert('Укажите цену');
         cloudData.services.push({ name, price, isCategory: false });
     }
-    document.getElementById('nameInput').value = '';
-    document.getElementById('priceInput').value = '';
+    nameInput.value = '';
+    if (priceInput) priceInput.value = '';
     renderPriceList();
 }
 
@@ -290,24 +319,32 @@ function renderUsersList() {
     c.innerHTML = '';
     cloudData.users.forEach((u, index) => {
         const isCurrent = index === currentUserIndex;
-        c.innerHTML += `<div class="user-card"><span class="user-name">👤 ${u.login}</span>${isCurrent ? '<span class="user-tag">Вы</span>' : (!isCurrent && cloudData.users.length > 1 ? `<button class="btn btn-danger" onclick="deleteUser(${index})">🗑</button>` : '')}</div>`;
+        c.innerHTML += `<div class="user-card"><span class="user-name">👤 ${u.login}</span>${isCurrent ? '<span class="user-tag">Вы</span>' : (!isCurrent && cloudData.users.length > 1 ? `<button type="button" class="btn btn-danger" onclick="deleteUser(${index})">🗑</button>` : '')}</div>`;
     });
 }
 
 function updateCurrentAccount() {
-    cloudData.users[currentUserIndex].login = document.getElementById('newCurrentLogin').value.trim();
-    cloudData.users[currentUserIndex].pass = document.getElementById('newCurrentPass').value.trim();
+    const lElem = document.getElementById('newCurrentLogin');
+    const pElem = document.getElementById('newCurrentPass');
+    if (!lElem || !pElem) return;
+
+    cloudData.users[currentUserIndex].login = lElem.value.trim();
+    cloudData.users[currentUserIndex].pass = pElem.value.trim();
     renderUsersList();
     saveToCloud();
 }
 
 function addNewUser() {
-    const l = document.getElementById('newNumLogin').value.trim();
-    const p = document.getElementById('newNumPass').value.trim();
+    const lElem = document.getElementById('newNumLogin');
+    const pElem = document.getElementById('newNumPass');
+    if (!lElem || !pElem) return;
+
+    const l = lElem.value.trim();
+    const p = pElem.value.trim();
     if (!l || !p) return alert('Заполните поля');
     cloudData.users.push({ login: l, pass: p });
-    document.getElementById('newNumLogin').value = '';
-    document.getElementById('newNumPass').value = '';
+    lElem.value = '';
+    pElem.value = '';
     renderUsersList();
     saveToCloud();
 }
