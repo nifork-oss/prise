@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Прайс-лист работ и услуг</title>
+    <!-- Библиотека генерации PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -22,13 +23,21 @@
         .btn-danger { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; width: auto; }
 
         .edit-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
-        .auth-box { text-align: center; }
-        .auth-box input { padding: 8px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; width: 150px; text-align: center; }
+        .auth-box { max-width: 300px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+        .auth-box input { padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; }
+
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 8px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; color: #495057; }
+        .tab-btn.active { background: #007bff; color: white; }
 
         .form-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
         .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+        .user-card { display: flex; justify-content: space-between; align-items: center; background: #fafafa; border: 1px solid #eee; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; }
+        .user-name { font-weight: 600; font-size: 14px; }
+        .user-tag { font-size: 11px; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
 
         #pdfPrice { display: none; }
         .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
@@ -49,40 +58,69 @@
 
     <div id="priceList">⏳ Загрузка прайс-листа...</div>
 
-    <!-- Раздел редактирования с защитой паролем -->
+    <!-- Авторизованный раздел редактирования -->
     <div class="edit-section">
-        <h3>🔒 Редактирование прайс-листа</h3>
+        <h3>🔒 Вход для редактирования прайса</h3>
 
         <div id="authBox" class="auth-box">
-            <p style="font-size: 13px; color: #666;">Введите PIN-код для редактирования:</p>
-            <input type="password" id="pinInput" placeholder="****" maxlength="4">
-            <button class="btn btn-primary" style="margin-top: 8px;" onclick="checkPin()">Разблокировать</button>
+            <input type="text" id="loginInput" placeholder="Логин">
+            <input type="password" id="passInput" placeholder="Пароль">
+            <button class="btn btn-primary" onclick="checkAuth()">Войти в редактирование</button>
+            <div id="authError" style="color:red; font-size:12px; text-align:center; display:none;">Неверный логин или пароль</div>
         </div>
 
         <div id="adminPanel" style="display: none;">
-            <div class="form-box">
-                <h4 style="margin-top:0;">➕ Добавить позицию</h4>
-                <div class="form-group">
-                    <label>Тип</label>
-                    <select id="typeSelect" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" onchange="toggleFormType()">
-                        <option value="service">Услуга / Работа</option>
-                        <option value="category">Раздел / Категория</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="nameInput" placeholder="Например: Шпаклевка стен">
-                </div>
-                <div id="serviceFields">
-                    <div class="form-group">
-                        <label>Цена (₽)</label>
-                        <input type="number" id="priceInput" placeholder="350">
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+            <div class="tab-menu">
+                <button class="tab-btn active" id="tabPriceBtn" onclick="switchTab('price')">🏷 Редактировать прайс</button>
+                <button class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')">👥 Пользователи</button>
             </div>
 
-            <button class="btn btn-success" onclick="saveToCloud()">💾 Сохранить изменения в облако</button>
+            <!-- Вкладка Услуги -->
+            <div id="priceTab">
+                <div class="form-box">
+                    <h4 style="margin-top:0;">➕ Добавить позицию</h4>
+                    <div class="form-group">
+                        <label>Тип</label>
+                        <select id="typeSelect" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" onchange="toggleFormType()">
+                            <option value="service">Услуга / Работа</option>
+                            <option value="category">Раздел / Категория</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Название</label>
+                        <input type="text" id="nameInput" placeholder="Например: Шпаклевка стен">
+                    </div>
+                    <div id="serviceFields">
+                        <div class="form-group">
+                            <label>Цена (₽)</label>
+                            <input type="number" id="priceInput" placeholder="350">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addItem()">Добавить позицию</button>
+                </div>
+            </div>
+
+            <!-- Вкладка Пользователи -->
+            <div id="usersTab" style="display: none;">
+                <h4>👤 Смена своего логина и пароля</h4>
+                <div class="form-box">
+                    <input type="text" id="newCurrentLogin" placeholder="Новый логин" style="margin-bottom:8px;">
+                    <input type="password" id="newCurrentPass" placeholder="Новый пароль" style="margin-bottom:8px;">
+                    <button class="btn btn-primary" onclick="updateCurrentAccount()">💾 Сохранить аккаунт</button>
+                </div>
+
+                <h4>➕ Добавить нового пользователя</h4>
+                <div class="form-box">
+                    <input type="text" id="newNumLogin" placeholder="Логин нового пользователя" style="margin-bottom:8px;">
+                    <input type="password" id="newNumPass" placeholder="Пароль" style="margin-bottom:8px;">
+                    <button class="btn btn-primary" onclick="addNewUser()">➕ Добавить пользователя</button>
+                </div>
+
+                <h4>📋 Список пользователей</h4>
+                <div id="usersList"></div>
+            </div>
+
+            <button class="btn btn-success" style="margin-top: 15px;" onclick="saveToCloud()">💾 Сохранить изменения в облако</button>
         </div>
     </div>
 </div>
@@ -106,10 +144,16 @@
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
-    const CORRECT_PIN = "1234";
 
-    let services = [];
+    const defaultUsers = [{ login: "admin", pass: "12345" }];
+
+    let cloudData = {
+        services: [],
+        users: []
+    };
+
     let isEditingUnlocked = false;
+    let currentUserIndex = -1;
 
     async function loadData() {
         try {
@@ -118,10 +162,14 @@
             });
             const data = await res.json();
             
-            if (data.record && data.record.services) {
-                services = data.record.services;
-            } else if (Array.isArray(data.record)) {
-                services = data.record;
+            if (Array.isArray(data.record)) {
+                cloudData.services = data.record;
+                cloudData.users = defaultUsers;
+            } else {
+                cloudData = data.record;
+                if (!cloudData.users || cloudData.users.length === 0) {
+                    cloudData.users = defaultUsers;
+                }
             }
             renderList();
         } catch (e) {
@@ -129,15 +177,39 @@
         }
     }
 
-    function checkPin() {
-        const pin = document.getElementById('pinInput').value;
-        if (pin === CORRECT_PIN) {
+    function checkAuth() {
+        const l = document.getElementById('loginInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+
+        const userIdx = cloudData.users.findIndex(u => u.login === l && u.pass === p);
+
+        if (userIdx !== -1) {
+            currentUserIndex = userIdx;
             isEditingUnlocked = true;
             document.getElementById('authBox').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
+            
+            document.getElementById('newCurrentLogin').value = cloudData.users[currentUserIndex].login;
+            document.getElementById('newCurrentPass').value = cloudData.users[currentUserIndex].pass;
+
             renderList();
+            renderUsers();
         } else {
-            alert('Неверный PIN-код!');
+            document.getElementById('authError').style.display = 'block';
+        }
+    }
+
+    function switchTab(tab) {
+        if (tab === 'price') {
+            document.getElementById('priceTab').style.display = 'block';
+            document.getElementById('usersTab').style.display = 'none';
+            document.getElementById('tabPriceBtn').classList.add('active');
+            document.getElementById('tabUsersBtn').classList.remove('active');
+        } else {
+            document.getElementById('priceTab').style.display = 'none';
+            document.getElementById('usersTab').style.display = 'block';
+            document.getElementById('tabPriceBtn').classList.remove('active');
+            document.getElementById('tabUsersBtn').classList.add('active');
         }
     }
 
@@ -150,12 +222,12 @@
         const list = document.getElementById('priceList');
         list.innerHTML = '';
 
-        if (services.length === 0) {
+        if (!cloudData.services || cloudData.services.length === 0) {
             list.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст</div>';
             return;
         }
 
-        services.forEach((item, index) => {
+        cloudData.services.forEach((item, index) => {
             const div = document.createElement('div');
             if (item.isCategory) {
                 div.className = 'service-item category-item';
@@ -181,7 +253,7 @@
         }
 
         if (type === 'category') {
-            services.push({ name: name, isCategory: true });
+            cloudData.services.push({ name: name, isCategory: true });
         } else {
             const price = parseFloat(document.getElementById('priceInput').value);
 
@@ -190,7 +262,7 @@
                 return;
             }
 
-            services.push({ name: name, price: price, isCategory: false });
+            cloudData.services.push({ name: name, price: price, isCategory: false });
         }
 
         document.getElementById('nameInput').value = '';
@@ -201,8 +273,71 @@
 
     function deleteItem(index) {
         if (confirm('Удалить эту позицию?')) {
-            services.splice(index, 1);
+            cloudData.services.splice(index, 1);
             renderList();
+        }
+    }
+
+    function renderUsers() {
+        const usersContainer = document.getElementById('usersList');
+        usersContainer.innerHTML = '';
+
+        cloudData.users.forEach((u, index) => {
+            const card = document.createElement('div');
+            card.className = 'user-card';
+
+            const isCurrent = (index === currentUserIndex);
+            const tagText = isCurrent ? '<span class="user-tag">Вы</span>' : '';
+
+            let deleteBtnHTML = '';
+            if (!isCurrent && cloudData.users.length > 1) {
+                deleteBtnHTML = `<button class="btn btn-danger" onclick="deleteUser(${index})">🗑</button>`;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <span class="user-name">👤 ${u.login}</span>${tagText}
+                </div>
+                ${deleteBtnHTML}
+            `;
+            usersContainer.appendChild(card);
+        });
+    }
+
+    function updateCurrentAccount() {
+        const newL = document.getElementById('newCurrentLogin').value.trim();
+        const newP = document.getElementById('newCurrentPass').value.trim();
+
+        if (!newL || !newP) return alert('Заполните данные!');
+
+        cloudData.users[currentUserIndex].login = newL;
+        cloudData.users[currentUserIndex].pass = newP;
+
+        renderUsers();
+        saveToCloud();
+    }
+
+    function addNewUser() {
+        const l = document.getElementById('newNumLogin').value.trim();
+        const p = document.getElementById('newNumPass').value.trim();
+
+        if (!l || !p) return alert('Заполните данные!');
+
+        cloudData.users.push({ login: l, pass: p });
+
+        document.getElementById('newNumLogin').value = '';
+        document.getElementById('newNumPass').value = '';
+
+        renderUsers();
+        saveToCloud();
+    }
+
+    function deleteUser(index) {
+        if (confirm(`Удалить пользователя "${cloudData.users[index].login}"?`)) {
+            cloudData.users.splice(index, 1);
+            if (index < currentUserIndex) currentUserIndex--;
+            renderUsers();
+            saveToCloud();
         }
     }
 
@@ -214,11 +349,11 @@
                     "Content-Type": "application/json",
                     "X-Master-Key": MASTER_KEY
                 },
-                body: JSON.stringify({ services: services })
+                body: JSON.stringify(cloudData)
             });
 
             if (res.ok) {
-                alert("Прайс-лист успешно сохранен!");
+                alert("Прайс-лист и пользователи успешно сохранены!");
             } else {
                 alert("Ошибка сохранения.");
             }
@@ -231,7 +366,7 @@
         const pdfPriceTableBody = document.getElementById('pdfPriceTableBody');
         pdfPriceTableBody.innerHTML = '';
 
-        services.forEach((srv) => {
+        cloudData.services.forEach((srv) => {
             const tr = document.createElement('tr');
             if (srv.isCategory) {
                 tr.innerHTML = `<td colspan="2" style="background:#e9ecef; font-weight:bold;">${srv.name}</td>`;
