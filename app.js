@@ -165,11 +165,11 @@ function generateInvoiceHTML() {
     invoiceCart.forEach(item => {
         const sum = item.qty * item.price;
         total += sum;
-        rows += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.unit}</td><td>${item.price.toLocaleString('ru-RU')} ₽</td><td>${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+        rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
     });
 
     return `
-        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; width:100%;">
+        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; max-width:700px; margin:0 auto;">
             <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
                 <div style="font-size: 18px; font-weight: bold; color: #007bff;">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
                 <div style="font-size: 12px; color: #777; margin-top: 4px;">Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
@@ -211,35 +211,17 @@ function closePdfPreview() {
     document.getElementById('pdfModal').style.display = 'none';
 }
 
-async function sharePDFInvoice() {
+function sharePDFInvoice() {
     const html = generateInvoiceHTML();
     if (!html) return;
-
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = '700px';
-    tempContainer.style.background = '#fff';
-    tempContainer.innerHTML = html;
-    document.body.appendChild(tempContainer);
-
-    try {
-        const opt = {
-            margin: 10,
-            filename: 'Счет_на_оплату.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        await html2pdf().set(opt).from(tempContainer).save();
-        document.body.removeChild(tempContainer);
-        closePdfPreview();
-    } catch (e) {
-        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
-        alert("Не удалось сгенерировать PDF. Попробуйте еще раз.");
-    }
+    
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Счет на оплату</title></head><body>${html}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+        win.print();
+    }, 500);
 }
 
 function resetAll() {
@@ -365,14 +347,14 @@ function generatePriceHTML() {
     let rows = '';
     cloudData.services.forEach(srv => {
         if (srv.isCategory) {
-            rows += `<tr><td colspan="2" style="background:#e9ecef; font-weight:bold;">${srv.name}</td></tr>`;
+            rows += `<tr><td colspan="2" style="border: 1px solid #ddd; padding: 8px; background:#e9ecef; font-weight:bold;">${srv.name}</td></tr>`;
         } else {
-            rows += `<tr><td>${srv.name}</td><td><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td></tr>`;
+            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${srv.name}</td><td style="border: 1px solid #ddd; padding: 8px;"><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td></tr>`;
         }
     });
 
     return `
-        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; width:100%;">
+        <div style="background:#fff; padding:20px; font-family:Arial,sans-serif; color:#333; max-width:700px; margin:0 auto;">
             <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 15px;">
                 <div style="font-size: 18px; font-weight: bold; color: #007bff;">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
                 <div style="font-size: 12px; color: #777; margin-top: 4px;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</div>
@@ -399,32 +381,13 @@ function openPricePdfPreview() {
     document.getElementById('pdfModal').style.display = 'flex';
 }
 
-async function sharePDFPrice() {
+function sharePDFPrice() {
     const html = generatePriceHTML();
-
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = '700px';
-    tempContainer.style.background = '#fff';
-    tempContainer.innerHTML = html;
-    document.body.appendChild(tempContainer);
-
-    try {
-        const opt = {
-            margin: 10,
-            filename: 'Прайс_лист.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        await html2pdf().set(opt).from(tempContainer).save();
-        document.body.removeChild(tempContainer);
-        document.getElementById('pdfModal').style.display = 'none';
-    } catch (e) {
-        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
-        alert("Не удалось сгенерировать PDF. Попробуйте еще раз.");
-    }
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Прайс-лист</title></head><body>${html}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+        win.print();
+    }, 500);
 }
