@@ -19,6 +19,8 @@
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
 
+        .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
+
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
         .service-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; display: flex; justify-content: space-between; }
         .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
@@ -73,13 +75,31 @@
 </div>
 
 <script>
-    // Стандартные услуги по умолчанию
+    // Исходный полная структура с категориями
     const defaultServices = [
-        { name: "Подготовительные работы", price: 300, unit: "м²" },
+        { isCategory: true, name: "Подготовительные работы" },
         { name: "Монтаж фасадной сетки", price: 500, unit: "м²" },
-        { name: "Армирование стен", price: 450, unit: "м²" },
-        { name: "Шпаклевка и грунтовка", price: 500, unit: "м²" },
-        { name: "Покраска стен в 2 слоя", price: 600, unit: "м²" }
+        { name: "Армирование стен фасадной сеткой", price: 450, unit: "м²" },
+        { name: "Монтаж стеклохолста", price: 500, unit: "м²" },
+        { name: "Наклейка стеклохолста на шпатлевку", price: 400, unit: "м²" },
+        { name: "Нанесение грунт-краски", price: 200, unit: "м²" },
+        { name: "Грунт-краска вместо клея", price: 250, unit: "м²" },
+        { name: "Шпатлевание и грунтовка", price: 500, unit: "м²" },
+        { name: "Финишное шпатлевание", price: 500, unit: "м²" },
+        { name: "Финишное выравнивание", price: 500, unit: "м²" },
+        
+        { isCategory: true, name: "Покрасочные работы" },
+        { name: "Нанесение праймера", price: 300, unit: "м²" },
+        { name: "Грунтовка перед покраской", price: 200, unit: "м²" },
+        { name: "Покраска стен в 2 слоя", price: 500, unit: "м²" },
+        { name: "Покраска лепнины", price: 500, unit: "м.п." },
+        { name: "Покраска плинтуса и молдингов", price: 400, unit: "м.п." },
+
+        { isCategory: true, name: "Монтажные работы" },
+        { name: "Монтаж карниза", price: 500, unit: "м.п." },
+        { name: "Установка потолочных карнизов", price: 600, unit: "м.п." },
+        { name: "Монтаж молдинга", price: 500, unit: "м.п." },
+        { name: "Установка декоративных молдингов", price: 550, unit: "м.п." }
     ];
 
     function getServices() {
@@ -106,20 +126,29 @@
         emptyMsg.style.display = 'none';
 
         services.forEach((srv, idx) => {
-            const card = document.createElement('div');
-            card.className = 'service-card';
-            const unitText = srv.unit ? ` / ${srv.unit}` : '';
-            card.innerHTML = `
-                <div class="service-title">
-                    <span>${srv.name}</span>
-                    <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽${unitText}</span>
-                </div>
-                <div class="service-controls">
-                    <input type="number" min="0" placeholder="Кол-во" id="qty_${idx}" oninput="updateInvoice()">
-                    <span style="font-size: 13px; color: #666;">${srv.unit || 'шт.'}</span>
-                </div>
-            `;
-            container.appendChild(card);
+            if (srv.isCategory) {
+                // Вывод заголовка категории
+                const catHeader = document.createElement('div');
+                catHeader.className = 'category-header';
+                catHeader.innerText = srv.name;
+                container.appendChild(catHeader);
+            } else {
+                // Вывод отдельной услуги
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                const unitText = srv.unit ? ` / ${srv.unit}` : '';
+                card.innerHTML = `
+                    <div class="service-title">
+                        <span>${srv.name}</span>
+                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽${unitText}</span>
+                    </div>
+                    <div class="service-controls">
+                        <input type="number" min="0" placeholder="Кол-во" id="qty_${idx}" oninput="updateInvoice()">
+                        <span style="font-size: 13px; color: #666;">${srv.unit || 'шт.'}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
         });
 
         updateInvoice();
@@ -136,13 +165,14 @@
         let total = 0;
         let hasItems = false;
 
-        // Обновление шапки счета
         let infoHTML = '';
         if (clientName) infoHTML += `<b>Заказчик:</b> ${clientName}<br>`;
         if (objectAddress) infoHTML += `<b>Адрес:</b> ${objectAddress}`;
         invoiceInfo.innerHTML = infoHTML;
 
         services.forEach((srv, idx) => {
+            if (srv.isCategory) return; // категории пропускаем при расчете
+
             const qtyInput = document.getElementById(`qty_${idx}`);
             const qty = qtyInput ? parseFloat(qtyInput.value) : 0;
 
