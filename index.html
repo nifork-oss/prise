@@ -3,398 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор услуг</title>
+    <title>Калькулятор услуг и счетов</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { margin-top: 0; text-align: center; color: #1a1a1a; font-size: 24px; }
-        .price-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 8px; }
-        .price-item label { display: flex; align-items: center; gap: 10px; cursor: pointer; width: 100%; font-size: 16px; }
-        .price-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-        .item-price { font-weight: bold; color: #28a745; white-space: nowrap; }
+        body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1 { font-size: 22px; margin-bottom: 15px; }
+        h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+        
+        .nav-btn { display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-align: center; }
+        .nav-btn:hover { background: #0056b3; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+        .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
+        .service-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .service-controls input[type="number"] { width: 90px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
-        .empty-msg { text-align: center; color: #888; margin: 20px 0; }
-        .nav-btn { display: block; text-align: center; margin: 0 0 20px 0; padding: 10px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; }
+
+        .invoice-preview { background: #f8f9fa; border: 2px dashed #007bff; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        .invoice-item { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
+        .invoice-item:last-child { border-bottom: none; }
+
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; text-align: center; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+
+        .empty-msg { text-align: center; color: #888; font-size: 14px; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Калькулятор услуг</h1>
+    <h1>📐 Калькулятор работ и услуг</h1>
 
-    <a href="price.html" class="nav-btn">📋 Редактировать прайс-лист</a>
+    <a href="price.html" class="nav-btn">⚙️ Управление прайс-листом</a>
 
-    <div id="itemsContainer"></div>
-    <div id="emptyMsg" class="empty-msg" style="display: none;">Прайс-лист пуст. Добавьте позиции на странице прайса.</div>
+    <div class="form-group">
+        <label>ФИО Заказчика</label>
+        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoice()">
+    </div>
+    <div class="form-group">
+        <label>Адрес объекта</label>
+        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoice()">
+    </div>
 
-    <div class="total-box">
-        Итого: <span id="totalAmount">0</span> ₽
+    <h2>🛠 Выберите услуги:</h2>
+    <div id="servicesList"></div>
+    <div id="emptyServicesMsg" class="empty-msg" style="display:none;">Прайс-лист пуст. Перейдите в настройки прайса для добавления услуг.</div>
+
+    <h2>🧾 Предпросмотр счета</h2>
+    <div class="invoice-preview" id="invoiceArea">
+        <div id="invoiceInfo" style="margin-bottom: 10px; font-size: 13px; color: #555;"></div>
+        <div id="invoiceItems"></div>
+        <div class="total-box">Итого: <span id="totalSum">0</span> ₽</div>
+    </div>
+
+    <div class="action-btns">
+        <button class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
+        <button class="btn btn-success" onclick="window.print()">🖨 Печать / PDF</button>
     </div>
 </div>
 
 <script>
-    // Начальные позиции, которые появятся при первом открытии
-    const defaultItems = [
-        { name: "Консультация", rawPrice: 1000, price: "1 000" },
-        { name: "Базовая настройка", rawPrice: 2500, price: "2 500" },
-        { name: "Полный комплекс", rawPrice: 5000, price: "5 000" }
+    // Стандартные услуги по умолчанию
+    const defaultServices = [
+        { name: "Подготовительные работы", price: 300, unit: "м²" },
+        { name: "Монтаж фасадной сетки", price: 500, unit: "м²" },
+        { name: "Армирование стен", price: 450, unit: "м²" },
+        { name: "Шпаклевка и грунтовка", price: 500, unit: "м²" },
+        { name: "Покраска стен в 2 слоя", price: 600, unit: "м²" }
     ];
 
-    function getStoredItems() {
+    function getServices() {
         const stored = localStorage.getItem('my_price_list');
         if (!stored) {
-            // Если в памяти ничего нет — записываем дефолтные
-            localStorage.setItem('my_price_list', JSON.stringify(defaultItems));
-            return defaultItems;
+            localStorage.setItem('my_price_list', JSON.stringify(defaultServices));
+            return defaultServices;
         }
         return JSON.parse(stored);
     }
 
-    function loadAndRenderItems() {
-        const items = getStoredItems();
-        const container = document.getElementById('itemsContainer');
-        const emptyMsg = document.getElementById('emptyMsg');
+    function renderServices() {
+        const services = getServices();
+        const container = document.getElementById('servicesList');
+        const emptyMsg = document.getElementById('emptyServicesMsg');
 
         container.innerHTML = '';
 
-        if (items.length === 0) {
+        if (services.length === 0) {
             emptyMsg.style.display = 'block';
-            document.getElementById('totalAmount').textContent = '0';
-            return;
-        } else {
-            emptyMsg.style.display = 'none';
-        }
-
-        items.forEach((item) => {
-            const div = document.createElement('div');
-            div.className = 'price-item';
-            div.innerHTML = `
-                <label>
-                    <input type="checkbox" data-price="${item.rawPrice}" onchange="calculateTotal()">
-                    <span>${item.name}</span>
-                </label>
-                <span class="item-price">${item.price} ₽</span>
-            `;
-            container.appendChild(div);
-        });
-
-        calculateTotal();
-    }
-
-    function calculateTotal() {
-        const checkboxes = document.querySelectorAll('#itemsContainer input[type="checkbox"]:checked');
-        let total = 0;
-        checkboxes.forEach(cb => {
-            total += Number(cb.getAttribute('data-price')) || 0;
-        });
-        document.getElementById('totalAmount').textContent = total.toLocaleString('ru-RU');
-    }
-
-    loadAndRenderItems();
-</script>
-
-</body>
-</html>
-    function loadAndRenderItems() {
-        // Читаем сохранение из localStorage
-        const items = JSON.parse(localStorage.getItem('my_price_list')) || [];
-        const container = document.getElementById('itemsContainer');
-        const emptyMsg = document.getElementById('emptyMsg');
-
-        container.innerHTML = '';
-
-        if (items.length === 0) {
-            emptyMsg.style.display = 'block';
-            document.getElementById('totalAmount').textContent = '0';
-            return;
-        } else {
-            emptyMsg.style.display = 'none';
-        }
-
-        items.forEach((item, index) => {
-            const div = document.createElement('div');
-            div.className = 'price-item';
-            div.innerHTML = `
-                <label>
-                    <input type="checkbox" data-price="${item.rawPrice}" onchange="calculateTotal()">
-                    <span>${item.name}</span>
-                </label>
-                <span class="item-price">${item.price} ₽</span>
-            `;
-            container.appendChild(div);
-        });
-
-        calculateTotal();
-    }
-
-    function calculateTotal() {
-        const checkboxes = document.querySelectorAll('#itemsContainer input[type="checkbox"]:checked');
-        let total = 0;
-        checkboxes.forEach(cb => {
-            total += Number(cb.getAttribute('data-price')) || 0;
-        });
-        document.getElementById('totalAmount').textContent = total.toLocaleString('ru-RU');
-    }
-
-    // Загружаем данные при открытии страницы
-    loadAndRenderItems();
-</script>
-
-</body>
-</html>
-        .invoice-preview { background: #f8f9fa; padding: 15px; border-top: 2px solid #e1e8ed; }
-        .invoice-header { text-align: center; margin-bottom: 15px; }
-        .invoice-client { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; border: 1px solid #e1e8ed; }
-        .invoice-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; margin-bottom: 6px; border-radius: 6px; border: 1px solid #e1e8ed; font-size: 13px; }
-        .remove-btn { background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; }
-        .invoice-total { background: #27ae60; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; margin: 15px 0; }
-        .invoice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; font-size: 12px; text-align: center; }
-        .btn-primary { background: #3498db; }
-        .btn-success { background: #27ae60; }
-        .btn-danger { background: #e74c3c; }
-        .btn-warning { background: #f39c12; }
-        .empty-cart { text-align: center; padding: 20px; color: #7f8c8d; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🧾 Система счетов</h1>
-            <div class="subtitle">Отделочные работы</div>
-        </div>
-
-        <div class="main-content">
-            <div class="services-column">
-                <div class="client-info">
-                    <h3>📋 Информация о заказе</h3>
-                    <div class="form-group">
-                        <label>ФИО заказчика:</label>
-                        <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
-                    </div>
-                    <div class="form-group">
-                        <label>Адрес объекта:</label>
-                        <input type="text" id="clientAddress" placeholder="г. Москва, ул. Примерная, д. 1">
-                    </div>
-                    <div class="form-group">
-                        <label>Имя исполнителя:</label>
-                        <input type="text" id="executorName" placeholder="Петров Алексей">
-                    </div>
-                </div>
-
-                <h3 style="margin-bottom: 12px; color: #2c3e50;">🛠️ Выберите услуги:</h3>
-                <div id="categoriesContainer"></div>
-            </div>
-
-            <div class="invoice-preview">
-                <div class="invoice-header">
-                    <h3>Предпросмотр счета</h3>
-                </div>
-
-                <div class="invoice-client" id="invoiceClientInfo" style="display: none;">
-                    <p><strong>Заказчик:</strong> <span id="previewClientName"></span></p>
-                    <p><strong>Адрес:</strong> <span id="previewClientAddress"></span></p>
-                    <p><strong>Исполнитель:</strong> <span id="previewExecutorName"></span></p>
-                </div>
-
-                <div id="invoiceItems">
-                    <div class="empty-cart">🛒 Добавьте услуги из списка выше</div>
-                </div>
-
-                <div class="invoice-total" id="invoiceTotal" style="display: none;">ИТОГО: 0 ₽</div>
-
-                <div class="invoice-actions">
-                    <button class="btn btn-danger" onclick="clearInvoice()">❌ Очистить</button>
-                    <button class="btn btn-success" onclick="generatePDF()">📄 Скачать PDF</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    const priceListData = {
-        "Подготовительные работы": [
-            { id: 1, name: "Монтаж фасадной сетки", price: 500, unit: "м²", description: "Армирование стен фасадной сеткой" },
-            { id: 2, name: "Монтаж стеклохолста", price: 500, unit: "м²", description: "Наклейка стеклохолста на шпаклевку" },
-            { id: 3, name: "Нанесение грунт-краски", price: 200, unit: "м²", description: "Грунт-краска вместо клея" }
-        ],
-        "Шпаклевание и грунтовка": [
-            { id: 4, name: "Финишное шпаклевание", price: 500, unit: "м²", description: "Финишное выравнивание" },
-            { id: 5, name: "Нанесение праймера", price: 300, unit: "м²", description: "Грунтовка перед покраской" }
-        ],
-        "Покраска": [
-            { id: 6, name: "Покраска стен", price: 500, unit: "м²", description: "Покраска в 2 слоя" },
-            { id: 7, name: "Покраска лепнины", price: 500, unit: "м.п.", description: "Покраска плинтусов и молдингов" }
-        ],
-        "Монтаж лепнины": [
-            { id: 8, name: "Монтаж карнизов", price: 500, unit: "м.п.", description: "Установка потолочных карнизов" },
-            { id: 9, name: "Монтаж молдингов", price: 500, unit: "м.п.", description: "Установка декоративных молдингов" }
-        ]
-    };
-
-    let selectedServices = [];
-
-    function render() {
-        const container = document.getElementById('categoriesContainer');
-        container.innerHTML = '';
-
-        Object.keys(priceListData).forEach(category => {
-            const services = priceListData[category];
-            const div = document.createElement('div');
-            div.className = 'mobile-category';
-            div.innerHTML = `
-                <div class="mobile-category-header" onclick="toggleCat('${category}')">
-                    <span>${category}</span>
-                    <span class="items-count">${services.length}</span>
-                </div>
-                <div class="mobile-category-content" id="cat-${category}">
-                    ${services.map(s => `
-                        <div class="service-card">
-                            <div class="service-header">
-                                <div>${s.name}</div>
-                                <div class="service-price">${s.price} ₽ / ${s.unit}</div>
-                            </div>
-                            <div class="service-description">${s.description}</div>
-                            <div class="service-controls">
-                                <input type="number" id="qty-${s.id}" placeholder="Кол-во" min="1" style="width: 80px;">
-                                <button class="add-btn" id="btn-${s.id}" onclick="addService(${s.id})">+ Добавить</button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function toggleCat(cat) {
-        const el = document.getElementById(`cat-${cat}`);
-        const active = el.classList.contains('active');
-        document.querySelectorAll('.mobile-category-content').forEach(c => c.classList.remove('active'));
-        if (!active) el.classList.add('active');
-    }
-
-    function addService(id) {
-        let item = null;
-        Object.values(priceListData).forEach(arr => {
-            const found = arr.find(x => x.id === id);
-            if (found) item = found;
-        });
-
-        const qtyInput = document.getElementById(`qty-${id}`);
-        const qty = parseFloat(qtyInput.value);
-
-        if (!qty || qty <= 0) {
-            alert('Укажите количество!');
+            updateInvoice();
             return;
         }
+        emptyMsg.style.display = 'none';
 
-        const total = qty * item.price;
-        const index = selectedServices.findIndex(s => s.id === id);
+        services.forEach((srv, idx) => {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            const unitText = srv.unit ? ` / ${srv.unit}` : '';
+            card.innerHTML = `
+                <div class="service-title">
+                    <span>${srv.name}</span>
+                    <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽${unitText}</span>
+                </div>
+                <div class="service-controls">
+                    <input type="number" min="0" placeholder="Кол-во" id="qty_${idx}" oninput="updateInvoice()">
+                    <span style="font-size: 13px; color: #666;">${srv.unit || 'шт.'}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
 
-        if (index > -1) {
-            selectedServices[index] = { ...item, qty, total };
-        } else {
-            selectedServices.push({ ...item, qty, total });
-        }
-
-        document.getElementById(`btn-${id}`).textContent = "✓ В корзине";
-        document.getElementById(`btn-${id}`).classList.add('added');
-        updateInvoice();
-    }
-
-    function removeService(index) {
-        const item = selectedServices[index];
-        selectedServices.splice(index, 1);
-        const btn = document.getElementById(`btn-${item.id}`);
-        if (btn) {
-            btn.textContent = "+ Добавить";
-            btn.classList.remove('added');
-        }
         updateInvoice();
     }
 
     function updateInvoice() {
-        const name = document.getElementById('clientName').value;
-        const addr = document.getElementById('clientAddress').value;
-        const exec = document.getElementById('executorName').value;
+        const services = getServices();
+        const invoiceItems = document.getElementById('invoiceItems');
+        const invoiceInfo = document.getElementById('invoiceInfo');
+        const clientName = document.getElementById('clientName').value.trim();
+        const objectAddress = document.getElementById('objectAddress').value.trim();
 
-        const info = document.getElementById('invoiceClientInfo');
-        if (name || addr || exec) {
-            document.getElementById('previewClientName').textContent = name || '—';
-            document.getElementById('previewClientAddress').textContent = addr || '—';
-            document.getElementById('previewExecutorName').textContent = exec || '—';
-            info.style.display = 'block';
-        } else {
-            info.style.display = 'none';
+        invoiceItems.innerHTML = '';
+        let total = 0;
+        let hasItems = false;
+
+        // Обновление шапки счета
+        let infoHTML = '';
+        if (clientName) infoHTML += `<b>Заказчик:</b> ${clientName}<br>`;
+        if (objectAddress) infoHTML += `<b>Адрес:</b> ${objectAddress}`;
+        invoiceInfo.innerHTML = infoHTML;
+
+        services.forEach((srv, idx) => {
+            const qtyInput = document.getElementById(`qty_${idx}`);
+            const qty = qtyInput ? parseFloat(qtyInput.value) : 0;
+
+            if (qty > 0) {
+                hasItems = true;
+                const itemSum = qty * Number(srv.price);
+                total += itemSum;
+
+                const itemRow = document.createElement('div');
+                itemRow.className = 'invoice-item';
+                itemRow.innerHTML = `
+                    <span>${srv.name} (${qty} ${srv.unit || 'шт.'})</span>
+                    <b>${itemSum.toLocaleString('ru-RU')} ₽</b>
+                `;
+                invoiceItems.appendChild(itemRow);
+            }
+        });
+
+        if (!hasItems) {
+            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Укажите количество хотя бы для одной услуги</div>';
         }
 
-        const container = document.getElementById('invoiceItems');
-        if (selectedServices.length === 0) {
-            container.innerHTML = '<div class="empty-cart">🛒 Добавьте услуги из списка выше</div>';
-            document.getElementById('invoiceTotal').style.display = 'none';
-            return;
-        }
-
-        let sum = 0;
-        container.innerHTML = selectedServices.map((s, i) => {
-            sum += s.total;
-            return `
-                <div class="invoice-item">
-                    <div>
-                        <strong>${s.name}</strong><br>
-                        <small>${s.qty} ${s.unit} × ${s.price} ₽</small>
-                    </div>
-                    <div>
-                        <strong>${s.total} ₽</strong>
-                        <button class="remove-btn" onclick="removeService(${i})">✕</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        const totalEl = document.getElementById('invoiceTotal');
-        totalEl.textContent = `ИТОГО: ${sum.toLocaleString('ru-RU')} ₽`;
-        totalEl.style.display = 'block';
+        document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function clearInvoice() {
-        selectedServices = [];
-        document.querySelectorAll('.add-btn').forEach(b => {
-            b.textContent = "+ Добавить";
-            b.classList.remove('added');
-        });
-        document.querySelectorAll('input[type="number"]').forEach(i => i.value = '');
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        const inputs = document.querySelectorAll('#servicesList input[type="number"]');
+        inputs.forEach(input => input.value = '');
         updateInvoice();
     }
 
-    function generatePDF() {
-        window.print();
-    }
+    renderServices();
+</script>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        localStorage.clear(); // Всегда очищает старые данные при запуске
-        render();
-        ['clientName', 'clientAddress', 'executorName'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updateInvoice);
-        });
-    });
-    </script>
 </body>
 </html>
-<!-- Кнопка перехода на прайс-лист -->
-<div style="text-align: center; margin: 15px 0;">
-    <a href="./price.html" style="
-        display: inline-block;
-        padding: 10px 20px;
-        background-color: #28a745;
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: bold;
-        font-family: sans-serif;
-        font-size: 14px;">
-        📋 Открыть прайс-лист
-    </a>
-</div>
