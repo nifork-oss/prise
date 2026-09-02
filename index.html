@@ -25,14 +25,20 @@
         .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
         .service-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
         .service-controls input[type="number"] { width: 90px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .service-controls span { font-size: 13px; color: #666; font-weight: 500; }
 
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
 
         .invoice-preview { background: #f8f9fa; border: 2px dashed #007bff; padding: 15px; border-radius: 8px; margin-top: 20px; }
-        .invoice-item { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
+        .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
+        .invoice-item-info { flex: 1; padding-right: 10px; }
+        .invoice-item-right { display: flex; align-items: center; gap: 8px; }
+        .remove-btn { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
 
         .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .btn { padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; text-align: center; }
+        
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-primary { background: #007bff; color: white; }
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
 
@@ -67,9 +73,10 @@
     </div>
 
     <div class="action-btns">
-        <button class="btn btn-danger" onclick="resetAll()">❌ Очистить всё</button>
+        <button class="btn btn-primary" onclick="shareInvoice()">📤 Отправить</button>
         <button class="btn btn-success" onclick="window.print()">🖨 Печать / PDF</button>
     </div>
+    <button class="btn btn-danger" onclick="resetAll()" style="width: 100%; margin-top: 10px;">❌ Очистить всё</button>
 </div>
 
 <script>
@@ -85,11 +92,9 @@
             });
             const data = await res.json();
             
-            // Если пришли новые данные со структурой { services: [...], users: [...] }
             if (data.record && data.record.services) {
                 services = data.record.services;
             } else if (Array.isArray(data.record)) {
-                // Запасной вариант для старой структуры
                 services = data.record;
             }
 
@@ -118,15 +123,16 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'service-card';
-                const unitText = srv.unit ? ` / ${srv.unit}` : '';
+                const unitText = srv.unit || 'шт.';
+                
                 card.innerHTML = `
                     <div class="service-title">
                         <span>${srv.name}</span>
-                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽${unitText}</span>
+                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽ / ${unitText}</span>
                     </div>
                     <div class="service-controls">
                         <input type="number" min="0" placeholder="Кол-во" id="qty_${idx}" oninput="updateInvoice()">
-                        <span style="font-size: 13px; color: #666;">${srv.unit || 'шт.'}</span>
+                        <span>${unitText}</span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -156,6 +162,7 @@
 
             const qtyInput = document.getElementById(`qty_${idx}`);
             const qty = qtyInput ? parseFloat(qtyInput.value) : 0;
+            const unitText = srv.unit || 'шт.';
 
             if (qty > 0) {
                 hasItems = true;
@@ -165,8 +172,11 @@
                 const itemRow = document.createElement('div');
                 itemRow.className = 'invoice-item';
                 itemRow.innerHTML = `
-                    <span>${srv.name} (${qty} ${srv.unit || 'шт.'})</span>
-                    <b>${itemSum.toLocaleString('ru-RU')} ₽</b>
+                    <div class="invoice-item-info">${srv.name} (${qty} ${unitText})</div>
+                    <div class="invoice-item-right">
+                        <b>${itemSum.toLocaleString('ru-RU')} ₽</b>
+                        <button class="remove-btn" onclick="removeFromCart(${idx})" title="Удалить позицию">✕</button>
+                    </div>
                 `;
                 invoiceItems.appendChild(itemRow);
             }
@@ -179,12 +189,86 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
+    function removeFromCart(idx) {
+        const qtyInput = document.getElementById(`qty_${idx}`);
+        if (qtyInput) {
+            qtyInput.value = '';
+            updateInvoice();
+        }
+    }
+
     function resetAll() {
         document.getElementById('clientName').value = '';
         document.getElementById('objectAddress').value = '';
         const inputs = document.querySelectorAll('#servicesList input[type="number"]');
         inputs.forEach(input => input.value = '');
         updateInvoice();
+    }
+
+    function generateTextInvoice() {
+        const clientName = document.getElementById('clientName').value.trim();
+        const objectAddress = document.getElementById('objectAddress').value.trim();
+
+        let text = "🧾 СЧЕТ НА ОПЛАТУ УСЛУГ\n";
+        text += "-----------------------------------\n";
+
+        if (clientName) text += `👤 Заказчик: ${clientName}\n`;
+        if (objectAddress) text += `📍 Адрес: ${objectAddress}\n`;
+        if (clientName || objectAddress) text += "-----------------------------------\n";
+
+        text += "Выбранные услуги:\n";
+        let total = 0;
+        let hasItems = false;
+
+        services.forEach((srv, idx) => {
+            if (srv.isCategory) return;
+
+            const qtyInput = document.getElementById(`qty_${idx}`);
+            const qty = qtyInput ? parseFloat(qtyInput.value) : 0;
+            const unitText = srv.unit || 'шт.';
+
+            if (qty > 0) {
+                hasItems = true;
+                const itemSum = qty * Number(srv.price);
+                total += itemSum;
+                text += `• ${srv.name}\n  ${qty} ${unitText} x ${Number(srv.price).toLocaleString('ru-RU')} ₽ = ${itemSum.toLocaleString('ru-RU')} ₽\n`;
+            }
+        });
+
+        if (!hasItems) return null;
+
+        text += "-----------------------------------\n";
+        text += `💰 ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽`;
+
+        return text;
+    }
+
+    async function shareInvoice() {
+        const invoiceText = generateTextInvoice();
+
+        if (!invoiceText) {
+            alert("Корзина пуста! Выберите хотя бы одну услугу.");
+            return;
+        }
+
+        // Используем Web Share API, если браузер поддерживает (мобильные устройства)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Счет на оплату',
+                    text: invoiceText
+                });
+            } catch (err) {
+                // Если пользователь отменил отправку
+            }
+        } else {
+            // Запасной вариант для старых ПК браузеров — копирование в буфер
+            navigator.clipboard.writeText(invoiceText).then(() => {
+                alert("Текст чека скопирован в буфер обмена! Теперь вы можете вставить его в любой мессенджер.");
+            }).catch(() => {
+                alert(invoiceText);
+            });
+        }
     }
 
     loadServicesFromCloud();
