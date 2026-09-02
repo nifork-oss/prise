@@ -3,82 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление прайс-листом</title>
+    <title>Прайс-лист работ и услуг</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1, h2, h3 { text-align: center; color: #1a1a1a; margin-top: 0; }
         
         .nav-btn { display: inline-block; text-decoration: none; background: #6c757d; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; margin-bottom: 15px; }
 
-        .auth-box { text-align: center; padding: 20px 0; }
-        .auth-box input { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; width: 200px; text-align: center; }
+        .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
+        .category-item { background: #e9ecef; font-weight: bold; font-size: 15px; margin-top: 15px; }
+
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
+        .btn-success { background: #28a745; color: white; margin-bottom: 15px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; width: auto; }
+
+        .edit-section { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
+        .auth-box { text-align: center; }
+        .auth-box input { padding: 8px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; width: 150px; text-align: center; }
 
         .form-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
         .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
 
-        .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
-        .category-item { background: #e9ecef; font-weight: bold; }
-        
-        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-primary { background: #007bff; color: white; width: 100%; }
-        .btn-success { background: #28a745; color: white; width: 100%; margin-top: 10px; }
-        .btn-danger { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; }
-
-        .hint { font-size: 11px; color: #888; margin-top: 2px; }
+        #pdfPrice { display: none; }
+        .pdf-template { padding: 30px; font-family: Arial, sans-serif; color: #333; background: #fff; }
+        .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+        .pdf-table th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <a href="index.html" class="nav-btn">⬅ Назад к калькулятору</a>
-    <h1>🔒 Управление прайс-листом</h1>
+    <h1>📋 Прайс-лист работ и услуг</h1>
 
-    <!-- Ввод PIN-кода -->
-    <div id="authBox" class="auth-box">
-        <p>Введите PIN-код для доступа:</p>
-        <input type="password" id="pinInput" placeholder="****" maxlength="4">
-        <button class="btn btn-primary" style="margin-top: 10px;" onclick="checkPin()">Войти</button>
-    </div>
+    <button class="btn btn-success" onclick="sharePDFPrice()">📋 Отправить актуальный прайс (PDF)</button>
 
-    <!-- Панель управления (скрыта по умолчанию) -->
-    <div id="adminPanel" style="display: none;">
-        
-        <div class="form-box">
-            <h3 style="margin-top:0;">➕ Добавить позицию</h3>
-            <div class="form-group">
-                <label>Тип</label>
-                <select id="typeSelect" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" onchange="toggleFormType()">
-                    <option value="service">Услуга / Работа</option>
-                    <option value="category">Раздел / Категория</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Название</label>
-                <input type="text" id="nameInput" placeholder="Например: Поклейка обоев">
-            </div>
-            <div id="serviceFields">
-                <div class="form-group">
-                    <label>Единицы измерения (через слэш /)</label>
-                    <input type="text" id="unitInput" placeholder="например: м² / пог. м">
-                    <div class="hint">Укажите варианты разделяя слэшем '/', чтобы при расчете можно было выбрать любой.</div>
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="priceInput" placeholder="350">
-                </div>
-            </div>
-            <button class="btn btn-primary" onclick="addItem()">Добавить в прайс</button>
+    <div id="priceList">⏳ Загрузка прайс-листа...</div>
+
+    <!-- Раздел редактирования с защитой паролем -->
+    <div class="edit-section">
+        <h3>🔒 Редактирование прайс-листа</h3>
+
+        <div id="authBox" class="auth-box">
+            <p style="font-size: 13px; color: #666;">Введите PIN-код для редактирования:</p>
+            <input type="password" id="pinInput" placeholder="****" maxlength="4">
+            <button class="btn btn-primary" style="margin-top: 8px;" onclick="checkPin()">Разблокировать</button>
         </div>
 
-        <h2>Текущий прайс-лист:</h2>
-        <div id="priceList"></div>
+        <div id="adminPanel" style="display: none;">
+            <div class="form-box">
+                <h4 style="margin-top:0;">➕ Добавить позицию</h4>
+                <div class="form-group">
+                    <label>Тип</label>
+                    <select id="typeSelect" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" onchange="toggleFormType()">
+                        <option value="service">Услуга / Работа</option>
+                        <option value="category">Раздел / Категория</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="nameInput" placeholder="Например: Шпаклевка стен">
+                </div>
+                <div id="serviceFields">
+                    <div class="form-group">
+                        <label>Цена (₽)</label>
+                        <input type="number" id="priceInput" placeholder="350">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addItem()">Добавить</button>
+            </div>
 
-        <button class="btn btn-success" onclick="saveToCloud()">💾 Сохранить изменения в облако</button>
+            <button class="btn btn-success" onclick="saveToCloud()">💾 Сохранить изменения в облако</button>
+        </div>
     </div>
+</div>
+
+<div id="pdfPrice" class="pdf-template">
+    <div class="pdf-header">
+        <div class="pdf-title">ПРАЙС-ЛИСТ РАБОТ И УСЛУГ</div>
+        <div id="pdfPriceDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
+    </div>
+    <table class="pdf-table">
+        <thead>
+            <tr>
+                <th>Наименование работы / услуги</th>
+                <th style="width: 120px;">Цена</th>
+            </tr>
+        </thead>
+        <tbody id="pdfPriceTableBody"></tbody>
+    </table>
 </div>
 
 <script>
@@ -87,17 +109,7 @@
     const CORRECT_PIN = "1234";
 
     let services = [];
-
-    function checkPin() {
-        const pin = document.getElementById('pinInput').value;
-        if (pin === CORRECT_PIN) {
-            document.getElementById('authBox').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            loadData();
-        } else {
-            alert('Неверный PIN-код!');
-        }
-    }
+    let isEditingUnlocked = false;
 
     async function loadData() {
         try {
@@ -113,7 +125,19 @@
             }
             renderList();
         } catch (e) {
-            alert("Ошибка загрузки прайса.");
+            document.getElementById('priceList').innerText = "Ошибка загрузки прайса.";
+        }
+    }
+
+    function checkPin() {
+        const pin = document.getElementById('pinInput').value;
+        if (pin === CORRECT_PIN) {
+            isEditingUnlocked = true;
+            document.getElementById('authBox').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            renderList();
+        } else {
+            alert('Неверный PIN-код!');
         }
     }
 
@@ -126,16 +150,22 @@
         const list = document.getElementById('priceList');
         list.innerHTML = '';
 
+        if (services.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст</div>';
+            return;
+        }
+
         services.forEach((item, index) => {
             const div = document.createElement('div');
             if (item.isCategory) {
                 div.className = 'service-item category-item';
                 div.innerHTML = `<span>📁 <b>${item.name}</b></span>
-                                 <button class="btn btn-danger" onclick="deleteItem(${index})">✕</button>`;
+                                 ${isEditingUnlocked ? `<button class="btn btn-danger" onclick="deleteItem(${index})">✕</button>` : ''}`;
             } else {
                 div.className = 'service-item';
-                div.innerHTML = `<span>${item.name} — <b>${Number(item.price).toLocaleString('ru-RU')} ₽</b> [${item.unit || 'шт.'}]</span>
-                                 <button class="btn btn-danger" onclick="deleteItem(${index})">✕</button>`;
+                div.innerHTML = `<span>${item.name}</span>
+                                 <span><b>${Number(item.price).toLocaleString('ru-RU')} ₽</b>
+                                 ${isEditingUnlocked ? `<button class="btn btn-danger" style="margin-left:8px;" onclick="deleteItem(${index})">✕</button>` : ''}</span>`;
             }
             list.appendChild(div);
         });
@@ -153,7 +183,6 @@
         if (type === 'category') {
             services.push({ name: name, isCategory: true });
         } else {
-            const unit = document.getElementById('unitInput').value.trim() || 'шт.';
             const price = parseFloat(document.getElementById('priceInput').value);
 
             if (isNaN(price)) {
@@ -161,11 +190,10 @@
                 return;
             }
 
-            services.push({ name: name, unit: unit, price: price, isCategory: false });
+            services.push({ name: name, price: price, isCategory: false });
         }
 
         document.getElementById('nameInput').value = '';
-        document.getElementById('unitInput').value = '';
         document.getElementById('priceInput').value = '';
 
         renderList();
@@ -190,7 +218,7 @@
             });
 
             if (res.ok) {
-                alert("Прайс-лист успешно обновлен в облаке!");
+                alert("Прайс-лист успешно сохранен!");
             } else {
                 alert("Ошибка сохранения.");
             }
@@ -198,6 +226,59 @@
             alert("Ошибка сети при сохранении.");
         }
     }
+
+    async function sharePDFPrice() {
+        const pdfPriceTableBody = document.getElementById('pdfPriceTableBody');
+        pdfPriceTableBody.innerHTML = '';
+
+        services.forEach((srv) => {
+            const tr = document.createElement('tr');
+            if (srv.isCategory) {
+                tr.innerHTML = `<td colspan="2" style="background:#e9ecef; font-weight:bold;">${srv.name}</td>`;
+            } else {
+                tr.innerHTML = `
+                    <td>${srv.name}</td>
+                    <td><b>${Number(srv.price).toLocaleString('ru-RU')} ₽</b></td>
+                `;
+            }
+            pdfPriceTableBody.appendChild(tr);
+        });
+
+        document.getElementById('pdfPriceDate').innerText = `Актуально на: ${new Date().toLocaleDateString('ru-RU')}`;
+
+        const element = document.getElementById('pdfPrice');
+        element.style.display = 'block';
+
+        const opt = {
+            margin:       10,
+            filename:     'Прайс_лист.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        element.style.display = 'none';
+
+        const file = new File([pdfBlob], 'Прайс_лист.pdf', { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Прайс-лист',
+                    text: 'Актуальный прайс-лист работ и услуг.'
+                });
+            } catch (err) {}
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = 'Прайс_лист.pdf';
+            link.click();
+        }
+    }
+
+    loadData();
 </script>
 
 </body>
