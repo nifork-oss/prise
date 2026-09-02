@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Калькулятор услуг</title>
-    <!-- Библиотека генерации PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -13,63 +12,36 @@
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
         h2 { font-size: 18px; margin-top: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
-        
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; }
-        .nav-btn:hover { background: #0056b3; }
-
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-
         .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
-
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
         .service-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
-        
+        .service-price { color: #28a745; font-weight: bold; }
         .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
-
-        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; text-align: center; }
-        .add-to-cart-btn:hover { background: #218838; }
-
+        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: white; flex: 1; }
+        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; }
         .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
-
         .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .invoice-item:last-child { border-bottom: none; }
-        .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
-        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
-        .btn-delete-item:hover { background: #bd2130; }
-
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
-        
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
         .btn-primary { background: #007bff; color: white; }
-        .btn-primary:hover { background: #0056b3; }
         .btn-success { background: #28a745; color: white; }
-        .btn-success:hover { background: #218838; }
         .btn-danger { background: #dc3545; color: white; }
-        .btn-danger:hover { background: #bd2130; }
-
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-
-        /* Модальное окно предпросмотра PDF */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 5px 25px rgba(0,0,0,0.3); }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { margin: 0; font-size: 16px; color: #333; }
-        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
         .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
         .modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-
-        /* Фиксированный контейнер для снимка PDF (вынесен за экран) */
-        .pdf-offscreen { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial, sans-serif; color: #333; }
-        .pdf-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
-        .pdf-title { font-size: 20px; font-weight: bold; color: #007bff; }
+        .pdf-offscreen { position: absolute; left: -9999px; top: 0; width: 700px; background: #fff; padding: 30px; font-family: Arial; color: #333; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: left; }
         .pdf-table th { background-color: #f2f2f2; }
     </style>
 </head>
@@ -77,20 +49,19 @@
 
 <div class="container">
     <h1>📐 Калькулятор услуг</h1>
-
     <a href="price.html" class="nav-btn">📋 Прайс-лист услуг</a>
 
     <div class="form-group">
         <label>ФИО Заказчика</label>
-        <input type="text" id="clientName" placeholder="Иванов Иван Иванович" oninput="updateInvoiceInfo()">
+        <input type="text" id="clientName" placeholder="Иванов И.И." oninput="updateInvoiceInfo()">
     </div>
     <div class="form-group">
         <label>Адрес объекта</label>
-        <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1" oninput="updateInvoiceInfo()">
+        <input type="text" id="objectAddress" placeholder="г. Москва" oninput="updateInvoiceInfo()">
     </div>
 
     <h2>🛠 Выберите услуги:</h2>
-    <div id="loader" class="loader">⏳ Загрузка актуального прайс-листа...</div>
+    <div id="loader" class="loader">⏳ Загрузка прайса...</div>
     <div id="servicesList"></div>
 
     <h2>🧾 Предпросмотр счета</h2>
@@ -106,40 +77,28 @@
     </div>
 </div>
 
-<!-- Модальное окно предпросмотра -->
 <div class="modal-overlay" id="pdfModal">
     <div class="modal-content">
         <div class="modal-header">
             <h3>👁 Предпросмотр документа</h3>
-            <button class="modal-close" onclick="closePdfPreview()">✕</button>
+            <button onclick="closePdfPreview()" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
         </div>
         <div class="modal-body" id="pdfPreviewContainer"></div>
         <div class="modal-footer">
             <button class="btn btn-success" onclick="sharePDFInvoice()">📤 Поделиться / Скачать PDF</button>
-            <button class="btn btn-danger" onclick="closePdfPreview()" style="width: 100px;">Закрыть</button>
+            <button class="btn btn-danger" onclick="closePdfPreview()" style="width: 120px;">Закрыть</button>
         </div>
     </div>
 </div>
 
-<!-- Шаблон счета (позиционирован вне экрана) -->
 <div id="pdfInvoice" class="pdf-offscreen">
-    <div class="pdf-header">
-        <div>
-            <div class="pdf-title">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
-            <div id="pdfDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
-        </div>
+    <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+        <div style="font-size: 20px; font-weight: bold; color: #007bff;">СЧЕТ НА ОПЛАТУ УСЛУГ</div>
+        <div id="pdfDate" style="font-size: 12px; color: #777; margin-top: 4px;"></div>
     </div>
     <div id="pdfClientDetails" style="font-size: 13px; margin-bottom: 15px;"></div>
     <table class="pdf-table">
-        <thead>
-            <tr>
-                <th>Наименование работы / услуги</th>
-                <th>Кол-во</th>
-                <th>Ед. изм.</th>
-                <th>Цена</th>
-                <th>Сумма</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr></thead>
         <tbody id="pdfTableBody"></tbody>
     </table>
     <div style="text-align: right; margin-top: 15px; font-size: 16px; font-weight: bold;">
@@ -147,239 +106,7 @@
     </div>
 </div>
 
-<script>
-    const BIN_ID = "6a98820eda38895dfe310361";
-    const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
-
-    const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
-
-    let services = [];
-    let invoiceCart = []; 
-
-    async function loadServicesFromCloud() {
-        try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                headers: { "X-Master-Key": MASTER_KEY }
-            });
-            const data = await res.json();
-            
-            if (data.record && data.record.services) {
-                services = data.record.services;
-            } else if (Array.isArray(data.record)) {
-                services = data.record;
-            }
-
-            document.getElementById('loader').style.display = 'none';
-            renderServices();
-        } catch (e) {
-            document.getElementById('loader').innerText = "Ошибка загрузки прайса.";
-        }
-    }
-
-    function renderServices() {
-        const container = document.getElementById('servicesList');
-        container.innerHTML = '';
-
-        if (!services || services.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст. Добавьте услуги в разделе прайса.</div>';
-            return;
-        }
-
-        services.forEach((srv, idx) => {
-            if (srv.isCategory) {
-                const catHeader = document.createElement('div');
-                catHeader.className = 'category-header';
-                catHeader.innerText = srv.name;
-                container.appendChild(catHeader);
-            } else {
-                const card = document.createElement('div');
-                card.className = 'service-card';
-                
-                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
-
-                card.innerHTML = `
-                    <div class="service-title">
-                        <span>${srv.name}</span>
-                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                    <div class="unit-row">
-                        <input type="number" id="input_qty_${idx}" min="0" placeholder="Кол-во" value="1">
-                        <select id="select_unit_${idx}">
-                            ${unitsOptions}
-                        </select>
-                    </div>
-                    <button class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
-                `;
-                container.appendChild(card);
-            }
-        });
-
-        renderInvoice();
-    }
-
-    function addToInvoice(srvIdx) {
-        const qtyInput = document.getElementById(`input_qty_${srvIdx}`);
-        const unitSelect = document.getElementById(`select_unit_${srvIdx}`);
-
-        const qty = parseFloat(qtyInput.value);
-        const unit = unitSelect.value;
-        const srv = services[srvIdx];
-
-        if (isNaN(qty) || qty <= 0) {
-            alert('Укажите количество больше нуля!');
-            return;
-        }
-
-        invoiceCart.push({
-            name: srv.name,
-            price: Number(srv.price),
-            qty: qty,
-            unit: unit
-        });
-
-        renderInvoice();
-    }
-
-    function removeFromInvoice(cartIdx) {
-        invoiceCart.splice(cartIdx, 1);
-        renderInvoice();
-    }
-
-    function updateInvoiceInfo() {
-        const invoiceInfo = document.getElementById('invoiceInfo');
-        const clientName = document.getElementById('clientName').value.trim();
-        const objectAddress = document.getElementById('objectAddress').value.trim();
-
-        let infoHTML = '';
-        if (clientName) infoHTML += `<b>Заказчик:</b> ${clientName}<br>`;
-        if (objectAddress) infoHTML += `<b>Адрес:</b> ${objectAddress}`;
-        invoiceInfo.innerHTML = infoHTML;
-    }
-
-    function renderInvoice() {
-        const invoiceItems = document.getElementById('invoiceItems');
-        invoiceItems.innerHTML = '';
-        let total = 0;
-
-        updateInvoiceInfo();
-
-        if (invoiceCart.length === 0) {
-            invoiceItems.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Укажите количество в услугах выше и нажмите «➕ Добавить в счёт»</div>';
-            document.getElementById('totalSum').textContent = '0';
-            return;
-        }
-
-        invoiceCart.forEach((item, idx) => {
-            const itemSum = item.qty * item.price;
-            total += itemSum;
-
-            const itemRow = document.createElement('div');
-            itemRow.className = 'invoice-item';
-            itemRow.innerHTML = `
-                <div class="invoice-item-info">
-                    <button class="btn-delete-item" onclick="removeFromInvoice(${idx})" title="Удалить позицию">✕ Удалить</button>
-                    <span>${item.name} (${item.qty} ${item.unit})</span>
-                </div>
-                <div><b>${itemSum.toLocaleString('ru-RU')} ₽</b></div>
-            `;
-            invoiceItems.appendChild(itemRow);
-        });
-
-        document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
-    }
-
-    function preparePdfData() {
-        if (invoiceCart.length === 0) {
-            alert("Добавьте хотя бы одну услугу в счёт!");
-            return false;
-        }
-
-        const clientName = document.getElementById('clientName').value.trim();
-        const objectAddress = document.getElementById('objectAddress').value.trim();
-        const pdfTableBody = document.getElementById('pdfTableBody');
-        
-        pdfTableBody.innerHTML = '';
-        let total = 0;
-
-        invoiceCart.forEach((item) => {
-            const itemSum = item.qty * item.price;
-            total += itemSum;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.name}</td>
-                <td>${item.qty}</td>
-                <td>${item.unit}</td>
-                <td>${item.price.toLocaleString('ru-RU')} ₽</td>
-                <td>${itemSum.toLocaleString('ru-RU')} ₽</td>
-            `;
-            pdfTableBody.appendChild(tr);
-        });
-
-        document.getElementById('pdfDate').innerText = `Дата: ${new Date().toLocaleDateString('ru-RU')}`;
-        document.getElementById('pdfClientDetails').innerHTML = `
-            ${clientName ? `<b>Заказчик:</b> ${clientName}<br>` : ''}
-            ${objectAddress ? `<b>Адрес объекта:</b> ${objectAddress}` : ''}
-        `;
-        document.getElementById('pdfTotalSum').innerText = total.toLocaleString('ru-RU');
-        return true;
-    }
-
-    function openPdfPreview() {
-        if (!preparePdfData()) return;
-        
-        const templateHTML = document.getElementById('pdfInvoice').innerHTML;
-        document.getElementById('pdfPreviewContainer').innerHTML = templateHTML;
-        document.getElementById('pdfModal').style.display = 'flex';
-    }
-
-    function closePdfPreview() {
-        document.getElementById('pdfModal').style.display = 'none';
-    }
-
-    async function sharePDFInvoice() {
-        if (!preparePdfData()) return;
-
-        const element = document.getElementById('pdfInvoice');
-
-        const opt = {
-            margin:       10,
-            filename:     'Счет_на_оплату.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        try {
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], 'Счет_на_оплату.pdf', { type: 'application/pdf' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Счет на оплату',
-                    text: 'Направляю счет на оплату в формате PDF.'
-                });
-            } else {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(pdfBlob);
-                link.download = 'Счет_на_оплату.pdf';
-                link.click();
-            }
-        } catch (err) {
-            alert("Ошибка при генерации PDF документа.");
-        }
-    }
-
-    function resetAll() {
-        document.getElementById('clientName').value = '';
-        document.getElementById('objectAddress').value = '';
-        invoiceCart = [];
-        renderServices();
-    }
-
-    loadServicesFromCloud();
-</script>
-
+<script src="app.js"></script>
+<script>loadCloudData(false);</script>
 </body>
 </html>
