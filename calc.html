@@ -1,3 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кабинет мастера и Калькулятор</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
+        h1, h2, h3 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1 { font-size: 22px; margin-bottom: 15px; }
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; text-align: center; }
+        .auth-container { max-width: 320px; margin: 40px auto; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #ddd; }
+        .auth-container input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
+        .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
+        .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
+        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; }
+        .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
+        .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 10px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .tab-btn.active { background: #007bff; color: white; }
+        .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; position: relative; }
+        .history-card b { color: #007bff; }
+        .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
+        #printArea { position: fixed; left: -9999px; top: 0; width: 190mm; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
+    </style>
+</head>
+<body>
+
+<div id="authScreen" class="container">
+    <a href="index.html" class="nav-btn">⬅ На главную (Прайс-лист)</a>
+    <div class="auth-container">
+        <h2>🔐 Вход для мастеров</h2>
+        <input type="text" id="loginInput" placeholder="Логин (например, admin)">
+        <input type="password" id="passInput" placeholder="Пароль">
+        <button type="button" class="btn btn-primary" onclick="handleLogin()">Войти</button>
+        <div id="authError" style="color:red; font-size:12px; margin-top:10px; display:none;">Неверный логин или пароль</div>
+    </div>
+</div>
+
+<div id="appScreen" class="container" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <a href="index.html" class="nav-btn" style="margin:0;">⬅ На прайс</a>
+        <button type="button" class="btn btn-danger" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="handleLogout()">Выйти</button>
+    </div>
+
+    <div class="tab-menu">
+        <button type="button" class="tab-btn active" id="tabCalcBtn" onclick="switchTab('calc')">📐 Калькулятор счёта</button>
+        <button type="button" class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📂 История счетов</button>
+    </div>
+
+    <div id="calcTab">
+        <h1>📐 Калькулятор счёта</h1>
+        <div class="form-group">
+            <label>ФИО Заказчика</label>
+            <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+        </div>
+        <div class="form-group">
+            <label>Адрес объекта</label>
+            <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1">
+        </div>
+
+        <h2>🛠 Выберите услуги:</h2>
+        <div id="loader" class="loader">⏳ Загрузка прайса...</div>
+        <div id="servicesList"></div>
+
+        <h2>🧾 Предпросмотр счета</h2>
+        <div class="invoice-preview">
+            <div id="invoiceInfo" style="margin-bottom: 10px; font-size: 13px; color: #555;"></div>
+            <div id="invoiceItems"></div>
+            <div class="total-box">Итого: <span id="totalSum">0</span> ₽</div>
+        </div>
+
+        <div class="action-btns">
+            <button type="button" class="btn btn-success" onclick="triggerChromePrintPDF()">📄 Сохранить в PDF</button>
+            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
+            <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
+        </div>
+    </div>
+
+    <div id="historyTab" style="display: none;">
+        <h1>📂 История счетов</h1>
+        <div id="historyList">Загрузка истории...</div>
+    </div>
+</div>
+
+<div id="printArea">
+    <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+    <p><b>Дата:</b> <span id="printDate"></span></p>
+    <p id="printClient" style="margin: 4px 0;"></p>
+    <p id="printAddress" style="margin: 4px 0;"></p>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
+                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
+            </tr>
+        </thead>
+        <tbody id="printTableBody"></tbody>
+    </table>
+    <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
+</div>
+
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
@@ -30,7 +156,7 @@
             if (loader) loader.style.display = 'none';
             renderServices();
         } catch (e) {
-            console.error("Ошибка загрузки", e);
+            console.error(e);
         }
     }
 
@@ -45,7 +171,7 @@
                 body: JSON.stringify(cloudData)
             });
         } catch (e) {
-            console.error("Ошибка сохранения", e);
+            console.error(e);
         }
     }
 
@@ -203,19 +329,36 @@
         document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
         const element = document.getElementById('printArea');
-        element.style.display = 'block';
+
+        element.style.position = 'absolute';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.zIndex = '999999';
+        element.style.opacity = '1';
+        element.style.backgroundColor = '#ffffff';
 
         const opt = {
             margin:       10,
             filename:     `Schet_${client || 'zakazchik'}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(element).set(opt).save().then(() => {
-            element.style.display = 'none';
-        });
+        setTimeout(() => {
+            html2pdf().from(element).set(opt).save().then(() => {
+                element.style.position = 'fixed';
+                element.style.left = '-9999px';
+                element.style.opacity = '0';
+                element.style.zIndex = '-9999';
+            }).catch(err => {
+                console.error(err);
+                element.style.position = 'fixed';
+                element.style.left = '-9999px';
+                element.style.opacity = '0';
+                element.style.zIndex = '-9999';
+            });
+        }, 300);
     }
 
     async function saveInvoiceToHistory() {
