@@ -12,8 +12,8 @@
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
-        .action-main-btn { background: #28a745; margin-bottom: 15px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; }
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
+        .action-main-btn { background: #28a745; margin-bottom: 20px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
         .category-header { background: #e9ecef; font-weight: bold; padding: 12px; border-radius: 6px; margin: 20px 0 10px 0; font-size: 16px; color: #495057; display: flex; justify-content: space-between; align-items: center; }
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .service-info { flex: 1; padding-right: 10px; }
@@ -35,10 +35,10 @@
 <body>
 
 <div class="container">
-    <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
+    <a href="calc.html" class="nav-btn">📐 Кабинет мастера / Калькулятор счёта</a>
     <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Скачать прайс-лист в PDF</button>
 
-    <h1>📋 Прайс-лист работ и услуг</h1>
+    <h1>📋 Прайс-лист услуг</h1>
 
     <!-- Панель управления для администратора -->
     <div id="adminPanel" class="admin-controls">
@@ -57,6 +57,7 @@
     <div id="loader" class="loader">⏳ Загрузка прайса из облака...</div>
     <div id="priceListContainer"></div>
 </div>
+
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
