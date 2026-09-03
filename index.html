@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Подключаем библиотеку для генерации PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f8fafc; margin: 0; padding: 12px 8px; color: #1e293b; }
@@ -125,6 +127,9 @@
         .calc-total-big { font-size: 18px; font-weight: 800; color: #4f46e5; }
 
         .action-buttons-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+        /* Скрытый шаблон для генерации красивого PDF */
+        #pdfTemplate { display: none; }
 
         @media (min-width: 481px) {
             body { padding: 20px 15px; }
@@ -246,10 +251,58 @@
             </div>
 
             <div class="action-buttons-group">
-                <button type="button" class="btn btn-primary" onclick="copyCalcResult()" style="flex: 1;">📋 Скопировать расчет</button>
+                <button type="button" class="btn btn-primary" onclick="downloadPDF()" style="flex: 1;">📥 Скачать PDF</button>
                 <button type="button" class="btn btn-wa" onclick="shareToWhatsApp()" style="flex: 1;">💬 В WhatsApp</button>
             </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="width: 100%;">🔄 Сбросить выбор</button>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытый макет для красивой генерации PDF -->
+<div id="pdfTemplate">
+    <div style="font-family: 'Inter', Arial, sans-serif; padding: 25px; color: #1e293b; background: #ffffff; max-width: 700px; margin: 0 auto;">
+        <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="margin: 0; color: #0f172a; font-size: 20px;">Смета на отделочные работы</h2>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Расчет стоимости комплексного «пирога»</p>
+            </div>
+            <div style="text-align: right;">
+                <span style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">ПРАЙС 2026</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 15px; font-size: 13px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <strong>Площадь поверхности:</strong> <span id="pdfAreaVal">1</span> м²
+        </div>
+
+        <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #475569; text-transform: uppercase;">Состав выбранных работ:</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;" id="pdfTable">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                    <th style="padding: 8px; border: 1px solid #cbd5e1;">Наименование услуги</th>
+                    <th style="padding: 8px; border: 1px solid #cbd5e1; width: 110px; text-align: right;">Цена за 1 м²</th>
+                </tr>
+            </thead>
+            <tbody id="pdfTableBody">
+                <!-- Заполняется динамически -->
+            </tbody>
+        </table>
+
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px;">
+                <span>Итого за 1 м²:</span>
+                <strong id="pdfPricePerMeter" style="color: #0f172a;">0 ₽</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+                <span style="font-weight: bold; color: #0f172a;">Итоговая стоимость:</span>
+                <strong id="pdfTotalSum" style="color: #4f46e5;">0 ₽</strong>
+            </div>
+        </div>
+
+        <div style="font-size: 11px; color: #64748b; line-height: 1.4; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+            <strong>Важная информация о погонных метрах:</strong><br>
+            В данный расчет включены только базовые квадратные метры отделочного «пирога». Все работы, измеряемые по <b>погонным метрам</b> (установка плинтусов, уголков, примыканий, погонные элементы конструкций), а также скрытые и дополнительные работы рассчитываются отдельно на объекте после проведения точных замеров.
         </div>
     </div>
 </div>
@@ -261,7 +314,7 @@
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = false;
     let currentAddType = 'service';
-    let openCategoryIdx = null; 
+    let openCategoryIdx = null; // Главный прайс изначально полностью свернут, если null
     let selectedForCalc = new Set(); 
     let calcCollapsedCategories = new Set(); // Хранит состояние свернутых категорий в калькуляторе
 
@@ -296,7 +349,19 @@
             console.error("Ошибка загрузки:", e);
         } finally {
             document.getElementById('loader').style.display = 'none';
+            // По умолчанию ВСЕ категории свернуты (и в главном прайсе, и инициализируем для калькулятора)
+            initCollapsedCategories();
             renderServices();
+        }
+    }
+
+    function initCollapsedCategories() {
+        if (cloudData && cloudData.services) {
+            cloudData.services.forEach((item, idx) => {
+                if (item.isCategory) {
+                    calcCollapsedCategories.add(idx); // Все категории калькулятора по умолчанию свернуты
+                }
+            });
         }
     }
 
@@ -364,7 +429,8 @@
                     return;
                 }
 
-                const isCollapsed = !query && (openCategoryIdx !== idx);
+                // По умолчанию все свернуты, кроме случая активного поиска
+                const isCollapsed = query ? false : (openCategoryIdx !== idx);
 
                 currentGroupEl = document.createElement('div');
                 currentGroupEl.className = `category-group ${isCollapsed ? 'collapsed' : ''}`;
@@ -447,7 +513,7 @@
         renderServices(document.getElementById('searchInput').value);
     }
 
-    /* Логика конструктора сметы (Калькулятор 1 м²) с категориями */
+    /* Логика конструктора сметы (Калькулятор 1 м²) */
     function openCalcModal() {
         renderCalcList();
         updateCalcTotals();
@@ -470,18 +536,13 @@
 
         let currentGroupEl = null;
         let currentItemsEl = null;
-        let currentCatIdx = null;
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                currentCatIdx = idx;
                 const isCollapsed = calcCollapsedCategories.has(idx);
 
-                // Считаем сколько услуг выбрано в этой категории
                 let selectedCountInCat = 0;
-                let totalInCat = 0;
                 for (let i = idx + 1; i < services.length && !services[i].isCategory; i++) {
-                    totalInCat++;
                     if (selectedForCalc.has(i)) selectedCountInCat++;
                 }
 
@@ -527,7 +588,6 @@
                 if (currentItemsEl) {
                     currentItemsEl.appendChild(row);
                 } else {
-                    // Если услуга идет без категории в самом начале
                     container.appendChild(row);
                 }
             }
@@ -540,7 +600,7 @@
         } else {
             selectedForCalc.add(idx);
         }
-        renderCalcList(); // Перерисовываем, чтобы обновить счетчики в заголовках категорий
+        renderCalcList();
         updateCalcTotals();
     }
 
@@ -584,42 +644,70 @@
             }
         });
 
-        if (itemsList.length === 0) {
-            return null;
-        }
+        if (itemsList.length === 0) return null;
 
         const total = pricePerMeter * area;
-
-        return `📋 *СМЕТА РАБОТ НА 1 м²*\n` +
-               `-----------------------------------\n` +
-               `*Состав работ ("пирог"):*\n` + itemsList.join('\n') + `\n\n` +
-               `📐 *Площадь:* ${area} м²\n` +
-               `💵 *Цена за 1 м²:* ${pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
-               `💰 *Предварительный итог:* ${total.toLocaleString('ru-RU')} ₽\n` +
-               `-----------------------------------\n` +
-               `_Примечание: Погонные работы и доп. услуги рассчитываются отдельно по факту замера._`;
+        return { pricePerMeter, total, itemsList, area };
     }
 
-    function copyCalcResult() {
-        const text = generateReportText();
-        if (!text) {
+    function downloadPDF() {
+        const data = generateReportText();
+        if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
 
-        navigator.clipboard.writeText(text).then(() => {
-            alert("📋 Расчет успешно скопирован в буфер обмена!");
-        }).catch(err => {
-            alert("Ошибка при копировании: " + err);
+        // Заполняем скрытый PDF-шаблон данными
+        document.getElementById('pdfAreaVal').textContent = data.area;
+        document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
+        document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
+
+        const tbody = document.getElementById('pdfTableBody');
+        tbody.innerHTML = '';
+        
+        selectedForCalc.forEach(idx => {
+            const item = cloudData.services[idx];
+            if (item && !item.isCategory) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        const element = document.getElementById('pdfTemplate');
+        element.style.display = 'block';
+
+        const opt = {
+            margin:       10,
+            filename:     'Smeta_otdelka.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            element.style.display = 'none'; // Скрываем обратно после генерации
         });
     }
 
     function shareToWhatsApp() {
-        const text = generateReportText();
-        if (!text) {
+        const data = generateReportText();
+        if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
+
+        let text = `📋 *СМЕТА РАБОТ НА 1 м²*\n` +
+                   `-----------------------------------\n` +
+                   `*Состав работ ("пирог"):*\n` + data.itemsList.join('\n') + `\n\n` +
+                   `📐 *Площадь:* ${data.area} м²\n` +
+                   `💵 *Цена за 1 м²:* ${data.pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
+                   `💰 *Итоговая стоимость:* ${data.total.toLocaleString('ru-RU')} ₽\n` +
+                   `-----------------------------------\n` +
+                   `⚠️ *Примечание:* Погонные метры (плинтусы, примыкания) и скрытые работы считаются отдельно по факту замера.`;
 
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
@@ -673,6 +761,7 @@
 
         if (currentAddType === 'category') {
             cloudData.services.push({ isCategory: true, name });
+            calcCollapsedCategories.add(cloudData.services.length - 1); // Новая категория тоже свернута
             openCategoryIdx = cloudData.services.length - 1;
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
