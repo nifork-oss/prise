@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
-    <!-- Прямое подключение html2canvas и jsPDF вместо нестабильного html2pdf.js -->
+    <!-- Прямое подключение html2canvas и jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -44,7 +44,6 @@
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-        #printArea { position: fixed; left: -9999px; top: 0; width: 750px; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
     </style>
 </head>
 <body>
@@ -104,26 +103,6 @@
         <h1>📂 История счетов</h1>
         <div id="historyList">Загрузка истории...</div>
     </div>
-</div>
-
-<div id="printArea">
-    <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
-    <p><b>Дата:</b> <span id="printDate"></span></p>
-    <p id="printClient" style="margin: 4px 0;"></p>
-    <p id="printAddress" style="margin: 4px 0;"></p>
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
-            </tr>
-        </thead>
-        <tbody id="printTableBody"></tbody>
-    </table>
-    <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
 </div>
 
 <script>
@@ -319,7 +298,7 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    // Прямой рендеринг: html2canvas -> jsPDF -> Web Share API
+    // Полностью динамическая генерация PDF без пустых кадров
     async function sendPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -328,16 +307,7 @@
 
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
-
-        document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
-        
-        const clientEl = document.getElementById('printClient');
-        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${escapeHtml(client)}` : '';
-        clientEl.style.display = client ? 'block' : 'none';
-
-        const addressEl = document.getElementById('printAddress');
-        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${escapeHtml(address)}` : '';
-        addressEl.style.display = address ? 'block' : 'none';
+        const dateStr = new Date().toLocaleDateString('ru-RU');
 
         let rows = '';
         let total = 0;
@@ -347,56 +317,76 @@
             rows += `
                 <tr>
                     <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.name)}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.unit)}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(item.unit)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.price.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${sum.toLocaleString('ru-RU')} ₽</td>
                 </tr>`;
         });
 
-        document.getElementById('printTableBody').innerHTML = rows;
-        document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
+        // Создаем видимый элемент строго по текущим координатам скролла, чтобы html2canvas его гарантированно сфотографировал
+        const printContainer = document.createElement('div');
+        printContainer.style.position = 'absolute';
+        printContainer.style.top = (window.scrollY || document.documentElement.scrollTop || 0) + 'px';
+        printContainer.style.left = '0';
+        printContainer.style.width = '750px';
+        printContainer.style.background = '#ffffff';
+        printContainer.style.color = '#333333';
+        printContainer.style.padding = '30px';
+        printContainer.style.boxSizing = 'border-box';
+        printContainer.style.zIndex = '999999';
+        printContainer.style.fontFamily = 'Arial, sans-serif';
 
-        const element = document.getElementById('printArea');
+        printContainer.innerHTML = `
+            <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0; font-size: 22px;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+            <p style="margin: 6px 0; font-size: 14px;"><b>Дата:</b> ${dateStr}</p>
+            ${client ? `<p style="margin: 6px 0; font-size: 14px;"><b>Заказчик:</b> ${escapeHtml(client)}</p>` : ''}
+            ${address ? `<p style="margin: 6px 0; font-size: 14px;"><b>Адрес объекта:</b> ${escapeHtml(address)}</p>` : ''}
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Кол-во</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Ед.</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Цена</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <h3 style="text-align: right; margin-top: 25px; font-size: 18px; color: #000;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+        `;
 
-        // Временно показываем печатный блок прямо в видимой области для захвата кадра
-        element.style.position = 'fixed';
-        element.style.top = '0';
-        element.style.left = '0';
-        element.style.zIndex = '999999';
-        element.style.opacity = '1';
-        element.style.backgroundColor = '#ffffff';
+        document.body.appendChild(printContainer);
 
-        // Пауза 100мс для гарантированной перерисовки браузером
-        await new Promise(r => setTimeout(r, 100));
+        // Пауза для полной отрисовки браузером
+        await new Promise(r => setTimeout(r, 150));
 
         try {
-            // 1. Делаем снимок холста через html2canvas
-            const canvas = await html2canvas(element, {
+            const canvas = await html2canvas(printContainer, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
-                logging: false
+                logging: false,
+                windowWidth: 750
             });
 
-            // 2. Получаем картинку с холста
+            // Удаляем временный элемент из видимости
+            document.body.removeChild(printContainer);
+
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-            // 3. Создаем PDF с помощью jsPDF
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210 мм
+            const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
             pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
-            // 4. Генерируем реальный файл PDF в формате Blob
             const pdfBlob = pdf.output('blob');
             const fileName = `Schet_${client || 'zakazchik'}.pdf`;
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-            // 5. Отправка через системное меню
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     title: 'Счет на оплату',
@@ -404,25 +394,19 @@
                     files: [file]
                 });
             } else {
-                // Если не поддерживается на ПК — даем скачанный файл без сбоя
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(pdfBlob);
                 link.download = fileName;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
-                alert("Прямая отправка не поддерживается текущим браузером, файл успешно сгенерирован и скачан.");
+                alert("Файл PDF успешно создан и скачан.");
             }
         } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.error("Ошибка при создании PDF:", err);
-                alert("Ошибка при сборке PDF: " + err.message);
-            }
-        } finally {
-            // Убираем область обратно
-            element.style.position = 'fixed';
-            element.style.left = '-9999px';
-            element.style.opacity = '0';
-            element.style.zIndex = '-9999';
+            if (printContainer.parentNode) document.body.removeChild(printContainer);
+            console.error("Ошибка при создании PDF:", err);
+            alert("Ошибка при сборке PDF: " + err.message);
         }
     }
 
