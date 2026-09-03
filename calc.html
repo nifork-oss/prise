@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
+    <!-- Подключаем стабильную версию библиотеки html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
@@ -41,13 +43,6 @@
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-        #printArea { display: none; }
-
-        @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 0; }
-        }
     </style>
 </head>
 <body>
@@ -97,7 +92,7 @@
         </div>
 
         <div class="action-btns">
-            <button type="button" class="btn btn-success" onclick="generatePDF()">📄 Сохранить в PDF / Печать</button>
+            <button type="button" class="btn btn-success" onclick="generatePDF()">📄 Сохранить в PDF</button>
             <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
@@ -107,26 +102,6 @@
         <h1>📂 История счетов</h1>
         <div id="historyList">Загрузка истории...</div>
     </div>
-</div>
-
-<div id="printArea">
-    <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
-    <p><b>Дата:</b> <span id="printDate"></span></p>
-    <p id="printClient" style="margin: 4px 0;"></p>
-    <p id="printAddress" style="margin: 4px 0;"></p>
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Кол-во</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Ед.</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Цена</th>
-                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Сумма</th>
-            </tr>
-        </thead>
-        <tbody id="printTableBody"></tbody>
-    </table>
-    <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
 </div>
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
@@ -308,31 +283,60 @@
             return;
         }
 
-        const client = document.getElementById('clientName').value.trim();
-        const address = document.getElementById('objectAddress').value.trim();
-
-        document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
+        const client = document.getElementById('clientName').value.trim() || "Заказчик";
         
-        const clientEl = document.getElementById('printClient');
-        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
-        clientEl.style.display = client ? 'block' : 'none';
+        // Создаем временный элемент для красивого PDF-документа
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.background = '#ffffff';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.color = '#333';
 
-        const addressEl = document.getElementById('printAddress');
-        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
-        addressEl.style.display = address ? 'block' : 'none';
-
-        let rows = '';
+        let rowsHtml = '';
         let total = 0;
         invoiceCart.forEach(item => {
             const sum = item.qty * item.price;
             total += sum;
-            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+            rowsHtml += `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align:center;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align:center;">${item.unit}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align:right;">${item.price.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align:right;">${sum.toLocaleString('ru-RU')} ₽</td>
+                </tr>
+            `;
         });
 
-        document.getElementById('printTableBody').innerHTML = rows;
-        document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
+        element.innerHTML = `
+            <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+            <p><b>Дата:</b> ${new Date().toLocaleDateString('ru-RU')}</p>
+            <p><b>Заказчик:</b> ${client}</p>
+            ${document.getElementById('objectAddress').value.trim() ? `<p><b>Адрес объекта:</b> ${document.getElementById('objectAddress').value.trim()}</p>` : ''}
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Наименование</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Кол-во</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ед.</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Цена</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+            <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+        `;
 
-        window.print();
+        const opt = {
+            margin:       10,
+            filename:     `Schet_${client.replace(/\s+/g, '_')}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save();
     }
 
     async function saveInvoiceToHistory() {
