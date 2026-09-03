@@ -59,8 +59,8 @@
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        /* ИСПРАВЛЕНИЕ ДЛЯ PDF: Постоянное позиционирование за экраном вместо display: none */
-        #printArea { position: absolute; left: -9999px; top: 0; width: 210mm; background: #fff; padding: 20px; }
+        /* ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ PDF: корректная видимость для html2canvas на мобильных */
+        #printArea { position: fixed; top: 0; left: 0; width: 210mm; background: #fff; padding: 20px; opacity: 0; pointer-events: none; z-index: -9999; }
     </style>
 </head>
 <body>
@@ -321,7 +321,6 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕЧАТИ PDF (без скрытия через display:none)
     function triggerChromePrintPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -358,11 +357,19 @@
             margin:       10,
             filename:     `Schet_${client || 'zakazchik'}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(element).set(opt).save();
+        // Делаем элемент видимым перед рендерингом PDF
+        element.style.opacity = '1';
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            element.style.opacity = '0';
+        }).catch(err => {
+            console.error("Ошибка генерации PDF:", err);
+            element.style.opacity = '0';
+        });
     }
 
     async function saveInvoiceToHistory() {
