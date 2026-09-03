@@ -180,7 +180,7 @@
             <div class="form-group" id="excludeGroup">
                 <label class="checkbox-label">
                     <input type="checkbox" id="itemExclude">
-                    <span>Изолировать от расчета 1 м² (заблокировать выбор)</span>
+                    <span>Только погонные метры (исключить из расчета 1 м²)</span>
                 </label>
             </div>
 
@@ -212,8 +212,9 @@
         <div class="modal-body">
             
             <div class="info-box">
-                <strong>💡 Важная информация о расчете:</strong>
-                Здесь можно собрать индивидуальный комплекс работ на $1\text{ м}^2$. Позиции, отмеченные как <i>«Только отдельный расчет»</i>, заблокированы, так как они считаются строго поштучно или по метрам периметра на замере.
+                <strong>💡 Как работать с калькулятором:</strong>
+                Выберите нужные этапы работ, чтобы сформировать стоимость комплексной отделки 1 м² поверхности.<br>
+                <span style="display:inline-block; margin-top:4px; opacity:0.9;">* Позиции с пометкой <b>«только погонные метры»</b> заблокированы для этого расчета, так как они замеряются и считаются отдельно по факту замера.</span>
             </div>
 
             <div class="area-input-card">
@@ -388,7 +389,7 @@
                         <div class="service-main">
                             <div class="service-name">
                                 ${escapeHtml(item.name)}
-                                ${isIsolated ? '<span class="isolated-badge">изолировано от м²</span>' : ''}
+                                ${isIsolated ? '<span class="isolated-badge">только погонные метры</span>' : ''}
                             </div>
                             <div class="service-price">
                                 ${Number(item.price).toLocaleString('ru-RU')} ₽
@@ -396,8 +397,8 @@
                         </div>
                         ${isAdmin ? `
                             <div class="admin-actions">
-                                <div class="switch-container" title="${isIsolated ? 'Услуга изолирована от расчета 1 м²' : 'Услуга разрешена в расчете 1 м²'}">
-                                    <span class="switch-label">${isIsolated ? '🔒 Изолир.' : '🔓 1 м²'}</span>
+                                <div class="switch-container" title="${isIsolated ? 'Услуга считается погонными метрами (заблокирована в 1 м²)' : 'Услуга разрешена в расчете 1 м²'}">
+                                    <span class="switch-label">${isIsolated ? '🔒 Пог. м' : '🔓 1 м²'}</span>
                                     <label class="switch">
                                         <input type="checkbox" ${isIsolated ? 'checked' : ''} onchange="toggleSquareIsolation(${idx})">
                                         <span class="slider"></span>
@@ -465,7 +466,7 @@
                     <input type="checkbox" ${isChecked} ${isDisabled} onchange="toggleCalcItem(${idx})">
                     <div class="calc-item-info">
                         <span class="calc-item-name">${escapeHtml(item.name)}</span>
-                        ${isExcluded ? `<span class="isolated-badge">Только отдельный расчет</span>` : ''}
+                        ${isExcluded ? `<span class="isolated-badge">только погонные метры</span>` : ''}
                     </div>
                     <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
                 `;
@@ -536,7 +537,7 @@
                `💵 *Цена за 1 м²:* ${pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
                `💰 *Предварительный итог:* ${total.toLocaleString('ru-RU')} ₽\n` +
                `-----------------------------------\n` +
-               `_Примечание: Отдельные работы рассчитываются дополнительно по факту замера._`;
+               `_Примечание: Погонные работы и доп. услуги рассчитываются отдельно по факту замера._`;
     }
 
     function copyCalcResult() {
