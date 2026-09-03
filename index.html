@@ -47,6 +47,9 @@
 
         .note-box { margin-top: 15px; padding: 12px; background: #f1f5f9; border-left: 4px solid #4f46e5; border-radius: 4px; font-size: 12px; color: #475569; line-height: 1.5; }
 
+        .lock-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px; transition: transform 0.1s; }
+        .lock-btn:active { transform: scale(0.9); }
+
         .action-btns { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
         .btn { padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
         .btn-success { background: #10b981; color: white; }
@@ -101,7 +104,7 @@
                 <input type="text" id="calcObjectName" placeholder="Например: Квартира-студия 40м²">
             </div>
             <div class="form-group">
-                <label>Выберите работы для включения в 1 м²:</label>
+                <label>Выберите работы для включения в 1 м² (замочки исключают позицию):</label>
                 <div id="calcCheckboxesContainer" style="max-height: 250px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #fff;"></div>
             </div>
         </div>
@@ -116,7 +119,7 @@
             
             <div class="note-box">
                 <b>📌 Примечание к расчёту:</b><br>
-                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м², так как выполняются индивидуально по факту и оформляются отдельно.
+                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м² с помощью переключателей (замочков), так как выполняются индивидуально по факту и оформляются отдельно.
             </div>
         </div>
 
@@ -132,14 +135,9 @@
 
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = localStorage.getItem('isAdminAuthorized') === 'true';
-
-    // Список ключевых слов или названий услуг, которые АПРИОРИ заблокированы для включения в 1 м²
-    const BLOCKED_FOR_SQUARE = [
-        "демонтаж", 
-        "вывоз мусора", 
-        "подъем материалов", 
-        "сложные криволинейные элементы"
-    ];
+    
+    // Объект для хранения состояния замков (true - заблокировано / вне пирога, false - открыто)
+    let lockedForSquare = {};
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -266,6 +264,11 @@
         }
     }
 
+    function toggleLock(globalIdx) {
+        lockedForSquare[globalIdx] = !lockedForSquare[globalIdx];
+        renderCalcCheckboxes();
+    }
+
     function renderCalcCheckboxes() {
         const container = document.getElementById('calcCheckboxesContainer');
         if (!container) return;
@@ -281,27 +284,24 @@
 
         workItems.forEach((item) => {
             const globalIdx = services.indexOf(item);
-            const lowerName = item.name.toLowerCase();
-            
-            // Проверяем, должна ли позиция быть заблокирована априори
-            const isBlocked = BLOCKED_FOR_SQUARE.some(keyword => lowerName.includes(keyword));
+            const isLocked = lockedForSquare[globalIdx] === true;
 
-            if (isBlocked) {
-                // Отрисовываем заблокированную позицию с пометкой
+            if (isLocked) {
                 container.innerHTML += `
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; opacity: 0.5;">
-                        <input type="checkbox" disabled style="width: 16px; height: 16px;">
-                        <span style="flex:1; color:#94a3b8; text-decoration: line-through;">${escapeHtml(item.name)} (не входит в 1 м²)</span>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; opacity: 0.6;">
+                        <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Разблокировать">🔒</button>
+                        <span style="flex:1; color:#94a3b8; text-decoration: line-through;">${escapeHtml(item.name)} (вне пирога)</span>
+                        <span style="font-size:11px; color:#94a3b8;">Исключено</span>
                     </div>
                 `;
             } else {
-                // Доступная для выбора позиция
                 container.innerHTML += `
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+                        <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Заблокировать (исключить)">🔓</button>
                         <input type="checkbox" class="calc-checkbox" value="${globalIdx}" onchange="renderSquareCalc()" style="width: 16px; height: 16px; accent-color: #4f46e5;">
                         <span style="flex:1; color:#334155;">${escapeHtml(item.name)}</span>
                         <span style="font-weight:600; color:#059669; white-space:nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</span>
-                    </label>
+                    </div>
                 `;
             }
         });
@@ -325,7 +325,7 @@
         checkboxes.forEach(cb => {
             const idx = parseInt(cb.value);
             const item = cloudData.services[idx];
-            if (item) {
+            if (item && !lockedForSquare[idx]) {
                 total += Number(item.price);
                 container.innerHTML += `
                     <div class="calc-item-row">
@@ -341,7 +341,12 @@
 
     async function generateSquarePDF() {
         const checkboxes = document.querySelectorAll('.calc-checkbox:checked');
-        if (checkboxes.length === 0) {
+        let validSelected = 0;
+        checkboxes.forEach(cb => {
+            if (!lockedForSquare[parseInt(cb.value)]) validSelected++;
+        });
+
+        if (validSelected === 0) {
             alert("Выберите хотя бы одну услугу для расчета метра!");
             return;
         }
@@ -356,7 +361,7 @@
         checkboxes.forEach(cb => {
             const idx = parseInt(cb.value);
             const item = cloudData.services[idx];
-            if (item) {
+            if (item && !lockedForSquare[idx]) {
                 total += Number(item.price);
                 rows += `
                     <tr>
@@ -401,7 +406,7 @@
             
             <div style="margin-top: 25px; padding: 12px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 4px; font-size: 11px; color: #555; line-height: 1.5;">
                 <b>📌 Примечание к расчёту:</b><br>
-                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м², так как выполняются индивидуально по факту и оформляются отдельно.
+                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м² с помощью переключателей (замочков), так как выполняются индивидуально по факту и оформляются отдельно.
             </div>
         `;
 
