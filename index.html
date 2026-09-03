@@ -15,7 +15,7 @@
         .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
         .action-main-btn { background: #28a745; margin-bottom: 15px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
         
-        /* Стили для блока с правилом погонных метров */
+        /* Стили для блока с правилом погонных метров на сайте */
         .info-box { background: #eef7ff; border: 1px solid #bce0fd; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; font-size: 13px; color: #004085; line-height: 1.4; }
         .info-box b { display: block; margin-bottom: 4px; font-size: 14px; color: #0056b3; }
 
@@ -43,12 +43,12 @@
     <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
     <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Скачать прайс-лист в PDF</button>
 
-    <h1>📋 Прайс-лист работ и услуг</h1>
+    <h1>📋 Прайс-лист услуг</h1>
 
-    <!-- Информационный блок с правилом расчёта -->
+    <!-- Информационный блок с правилом расчёта на сайте -->
     <div class="info-box">
         <b>💡 Правило расчёта погонных метров:</b>
-        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа.
+        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
     </div>
 
     <!-- Панель управления для администратора -->
@@ -181,13 +181,14 @@
 
         let htmlContent = `
             <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0; text-align:center;">ПРАЙС-ЛИСТ УСЛУГ</h2>
-            <p style="text-align:center; font-size: 12px; color: #666;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</p>
+            <p style="text-align:center; font-size: 11px; color: #666; margin-bottom: 15px;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</p>
             
-            <div style="background-color: #eef7ff; border: 1px solid #bce0fd; padding: 10px; margin: 15px 0; font-size: 12px; color: #004085; line-height: 1.3; border-radius: 4px;">
-                <b>Правило расчёта погонных метров:</b> Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр.
+            <div style="background-color: #eef7ff; border: 1px solid #bce0fd; padding: 12px; margin-bottom: 20px; font-size: 11px; color: #004085; line-height: 1.4; border-radius: 6px;">
+                <b>Правило расчёта погонных метров:</b><br>
+                Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <table style="width: 100%; border-collapse: collapse;">
         `;
 
         services.forEach(srv => {
