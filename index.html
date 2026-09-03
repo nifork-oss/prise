@@ -66,7 +66,6 @@
         .btn-wa { background: #25d366; color: white; }
         .btn-sm { padding: 5px 8px; font-size: 11px; min-height: 30px; border-radius: 6px; }
 
-        /* Визуальный переключатель-тумблер */
         .switch-container { display: flex; align-items: center; background: #f1f5f9; padding: 4px 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
         .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -103,9 +102,17 @@
         .area-input-card label { font-size: 13px; font-weight: 600; color: #334155; }
         .area-input-card input { width: 100px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; color: #0f172a; outline: none; }
 
-        .calc-select-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #f1f5f9; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s; }
+        /* Стили для категорий внутри калькулятора */
+        .calc-category-group { margin-bottom: 8px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #ffffff; }
+        .calc-category-header { background: #f8fafc; padding: 10px 12px; font-weight: 700; font-size: 13px; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; border-bottom: 1px solid #f1f5f9; }
+        .calc-category-header:hover { background: #f1f5f9; }
+        .calc-category-items { padding: 6px; }
+        .calc-category-group.collapsed .calc-category-items { display: none; }
+        .calc-category-group.collapsed .category-arrow { transform: rotate(-90deg); }
+
+        .calc-select-item { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #f1f5f9; border-radius: 8px; margin-bottom: 4px; cursor: pointer; transition: background 0.15s; }
         .calc-select-item:hover { background: #f8fafc; }
-        .calc-select-item.disabled-item { opacity: 0.6; background: #f8fafc; cursor: not-allowed; }
+        .calc-select-item.disabled-item { opacity: 0.5; background: #fafafa; cursor: not-allowed; }
         .calc-select-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4f46e5; cursor: pointer; }
         .calc-select-item input[type="checkbox"]:disabled { cursor: not-allowed; }
         .calc-item-info { flex: 1; }
@@ -256,6 +263,7 @@
     let currentAddType = 'service';
     let openCategoryIdx = null; 
     let selectedForCalc = new Set(); 
+    let calcCollapsedCategories = new Set(); // Хранит состояние свернутых категорий в калькуляторе
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -308,6 +316,15 @@
     function toggleCategory(catIdx) {
         openCategoryIdx = (openCategoryIdx === catIdx) ? null : catIdx;
         renderServices(document.getElementById('searchInput').value);
+    }
+
+    function toggleCalcCategory(catIdx) {
+        if (calcCollapsedCategories.has(catIdx)) {
+            calcCollapsedCategories.delete(catIdx);
+        } else {
+            calcCollapsedCategories.add(catIdx);
+        }
+        renderCalcList();
     }
 
     function toggleSquareIsolation(idx) {
@@ -430,7 +447,7 @@
         renderServices(document.getElementById('searchInput').value);
     }
 
-    /* Логика конструктора сметы (Калькулятор 1 м²) */
+    /* Логика конструктора сметы (Калькулятор 1 м²) с категориями */
     function openCalcModal() {
         renderCalcList();
         updateCalcTotals();
@@ -446,13 +463,49 @@
         container.innerHTML = '';
 
         const services = cloudData.services || [];
+        if (services.length === 0) {
+            container.innerHTML = '<div class="empty-state">Список услуг пуст</div>';
+            return;
+        }
+
+        let currentGroupEl = null;
+        let currentItemsEl = null;
+        let currentCatIdx = null;
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                const catHeader = document.createElement('div');
-                catHeader.style.cssText = "font-weight: 700; font-size: 13px; color: #4338ca; margin: 12px 0 6px 0;";
-                catHeader.textContent = item.name;
-                container.appendChild(catHeader);
+                currentCatIdx = idx;
+                const isCollapsed = calcCollapsedCategories.has(idx);
+
+                // Считаем сколько услуг выбрано в этой категории
+                let selectedCountInCat = 0;
+                let totalInCat = 0;
+                for (let i = idx + 1; i < services.length && !services[i].isCategory; i++) {
+                    totalInCat++;
+                    if (selectedForCalc.has(i)) selectedCountInCat++;
+                }
+
+                currentGroupEl = document.createElement('div');
+                currentGroupEl.className = `calc-category-group ${isCollapsed ? 'collapsed' : ''}`;
+
+                const header = document.createElement('div');
+                header.className = 'calc-category-header';
+                header.onclick = () => toggleCalcCategory(idx);
+
+                header.innerHTML = `
+                    <div class="category-title" style="display:flex; align-items:center; gap:6px;">
+                        <span class="category-arrow">▼</span>
+                        <span>${escapeHtml(item.name)}</span>
+                    </div>
+                    ${selectedCountInCat > 0 ? `<span class="category-count" style="background:#e0e7ff; color:#4338ca;">Выбрано: ${selectedCountInCat}</span>` : ''}
+                `;
+
+                currentItemsEl = document.createElement('div');
+                currentItemsEl.className = 'calc-category-items';
+
+                currentGroupEl.appendChild(header);
+                currentGroupEl.appendChild(currentItemsEl);
+                container.appendChild(currentGroupEl);
             } else {
                 const isExcluded = !!item.excludeFromSquare;
 
@@ -470,7 +523,13 @@
                     </div>
                     <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
                 `;
-                container.appendChild(row);
+
+                if (currentItemsEl) {
+                    currentItemsEl.appendChild(row);
+                } else {
+                    // Если услуга идет без категории в самом начале
+                    container.appendChild(row);
+                }
             }
         });
     }
@@ -481,6 +540,7 @@
         } else {
             selectedForCalc.add(idx);
         }
+        renderCalcList(); // Перерисовываем, чтобы обновить счетчики в заголовках категорий
         updateCalcTotals();
     }
 
