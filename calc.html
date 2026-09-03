@@ -3,444 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кабинет мастера / Калькулятор счёта</title>
-    <!-- Библиотека для генерации PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <title>Прайс-лист работ и услуг</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
-        h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
-        h1 { font-size: 22px; margin-bottom: 15px; }
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 5px rgba(108,117,125,0.3); }
+        .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1, h2, h3, h4 { text-align: center; color: #1a1a1a; margin-top: 0; }
         
-        /* Авторизация */
-        #authSection { background: #fff; padding: 10px 0; }
-        #calcSection { display: none; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
-        
-        .btn { padding: 12px 15px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn-success { background: #28a745; color: white; }
-        .btn-primary { background: #007bff; color: white; margin-top: 10px; }
-        .btn-danger { background: #dc3545; color: white; padding: 6px 10px; font-size: 12px; width: auto; }
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #28a745; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; }
+        .nav-btn:active { background: #218838; }
 
-        /* Выбранные позиции счёта */
-        .calc-item { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .calc-item-info { flex: 1; padding-right: 10px; }
-        .calc-item-title { font-weight: 600; font-size: 14px; color: #222; }
-        .calc-item-details { font-size: 12px; color: #666; margin-top: 3px; }
-        .calc-item-sum { font-weight: bold; color: #28a745; font-size: 15px; white-space: nowrap; margin-right: 10px; }
-        
-        .total-box { background: #eef7ff; border: 1px solid #bce0fd; padding: 15px; border-radius: 8px; text-align: right; font-size: 18px; font-weight: bold; color: #004085; margin: 20px 0; }
-        
-        .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-        .history-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333; }
-        .history-details { font-size: 12px; color: #555; }
-        
+        .info-box { background: #eef6ff; border-left: 4px solid #007bff; padding: 12px 15px; border-radius: 6px; font-size: 13px; line-height: 1.5; color: #2c3e50; margin-bottom: 20px; }
+        .info-box b { color: #0056b3; }
+
+        .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
+        .category-item { background: #e9ecef; font-weight: bold; font-size: 15px; margin-top: 15px; }
+
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
+        .btn-success { background: #28a745; color: white; margin-bottom: 15px; }
+        .btn-success:active { background: #218838; }
+
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="index.html" class="nav-btn">← Назад к прайс-листу</a>
+    <h1>📋 Прайс-лист работ и услуг</h1>
 
-    <!-- БЛОК АВТОРИЗАЦИИ МАСТЕРА -->
-    <div id="authSection">
-        <h1>🔐 Вход для мастера</h1>
-        <div class="form-group">
-            <label>Логин</label>
-            <input type="text" id="loginInput" placeholder="Введите логин">
-        </div>
-        <div class="form-group">
-            <label>Пароль</label>
-            <input type="password" id="passInput" placeholder="Введите пароль">
-        </div>
-        <button type="button" class="btn btn-success" onclick="handleLogin()">Войти в кабинет</button>
+    <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
+
+    <button type="button" id="sharePriceBtn" class="btn btn-success">📤 Поделиться прайсом в мессенджер</button>
+
+    <!-- Пояснительный блок -->
+    <div class="info-box">
+        💡 <b>Правило расчёта погонных метров:</b><br>
+        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах рассчитываются элементы и конструкции, у которых один или несколько габаритных параметров (например, ширина или высота) составляют меньше 1 метра (колонны, откосы, плинтусы, карнизы, узкие ниши и прочие конструкции).
     </div>
 
-    <!-- БЛОК КАЛЬКУЛЯТОРА И СЧЁТА -->
-    <div id="calcSection">
-        <h1>📐 Калькулятор и формирование счёта</h1>
-
-        <div class="form-group">
-            <label>Имя клиента</label>
-            <input type="text" id="clientName" placeholder="Например: Алексей Петров">
-        </div>
-
-        <div class="form-group">
-            <label>Выберите услугу из прайса</label>
-            <select id="serviceSelect"></select>
-        </div>
-
-        <div class="form-group">
-            <label>Тип измерения</label>
-            <select id="calcType" onchange="toggleDimensions()">
-                <option value="qty">Количество (шт / м² / м³)</option>
-                <option value="linear">Погонные метры (по сторонам)</option>
-            </select>
-        </div>
-
-        <!-- Обычное количество -->
-        <div class="form-group" id="qtyGroup">
-            <label>Количество</label>
-            <input type="number" id="itemQty" value="1" min="0.1" step="any">
-        </div>
-
-        <!-- Размеры для погонных метров -->
-        <div id="linearGroup" style="display:none; background: #fff8e1; padding: 12px; border-radius: 8px; border: 1px solid #ffe082; margin-bottom: 15px;">
-            <label style="font-weight: bold; color: #856404; margin-bottom: 8px; display: block;">📏 Расчёт погонных метров (стороны элемента)</label>
-            <div style="display: flex; gap: 10px;">
-                <div style="flex:1;">
-                    <label style="font-size: 11px;">Длина (м)</label>
-                    <input type="number" id="sideLength" value="1" min="0.01" step="any" placeholder="Например: 0.8">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size: 11px;">Ширина (м)</label>
-                    <input type="number" id="sideWidth" value="1" min="0.01" step="any" placeholder="Например: 1.2">
-                </div>
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 6px;">
-                * Если сторона меньше 1 метра, она автоматически считается как 1 п.м.
-            </div>
-        </div>
-
-        <button type="button" class="btn btn-success" onclick="addPositionToInvoice()">➕ Добавить позицию в счёт</button>
-
-        <h3 style="margin-top: 25px; border-bottom: 2px solid #eee; padding-bottom: 5px;">Список позиций счёта</h3>
-        <div id="invoiceItemsContainer">
-            <div style="text-align: center; color: #888; padding: 10px;">Счёт пока пуст</div>
-        </div>
-
-        <div class="total-box">
-            Итого к оплате: <span id="invoiceTotal">0</span> ₽
-        </div>
-
-        <button type="button" class="btn btn-success" style="font-size: 16px; padding: 15px;" onclick="generateInvoicePDF()">📄 Отправить счёт клиенту в PDF</button>
-
-        <h2 style="margin-top: 35px;">📂 История сохранённых счетов</h2>
-        <div id="historyContainer">
-            <div style="text-align: center; color: #888; padding: 10px;">История пуста</div>
-        </div>
-    </div>
-
-    <div id="loader" class="loader" style="display:none;">⏳ Синхронизация с облаком...</div>
+    <div id="loader" class="loader">⏳ Загрузка актуального прайс-листа...</div>
+    <div id="priceList"></div>
 </div>
+
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
-    let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }], history: [] };
-    let currentInvoiceItems = [];
+    let services = [];
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadCloudDataAndCheckAuth();
+        loadPriceData();
+        document.getElementById('sharePriceBtn').addEventListener('click', sharePriceText);
     });
 
-    async function loadCloudDataAndCheckAuth() {
-        const loader = document.getElementById('loader');
-        loader.style.display = 'block';
+    async function loadPriceData() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
+            
             if (data.record) {
-                cloudData = data.record;
+                if (Array.isArray(data.record)) {
+                    services = data.record;
+                } else {
+                    services = data.record.services || [];
+                }
             }
+
+            document.getElementById('loader').style.display = 'none';
+            renderPriceList();
         } catch (e) {
-            console.error(e);
-            alert("Ошибка загрузки данных из облака.");
-        }
-        loader.style.display = 'none';
-
-        const isAuth = localStorage.getItem('isAdminAuthorized') === 'true';
-        if (isAuth) {
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('calcSection').style.display = 'block';
-            initCalculator();
+            document.getElementById('loader').innerText = "Ошибка загрузки прайса.";
         }
     }
 
-    async function handleLogin() {
-        const login = document.getElementById('loginInput').value.trim();
-        const pass = document.getElementById('passInput').value.trim();
+    function renderPriceList() {
+        const list = document.getElementById('priceList');
+        if (!list) return;
+        list.innerHTML = '';
 
-        const users = cloudData.users || [{ login: "admin", pass: "12345" }];
-        const found = users.find(u => u.login === login && u.pass === pass);
-
-        if (found || (login === "admin" && pass === "12345")) {
-            localStorage.setItem('isAdminAuthorized', 'true');
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('calcSection').style.display = 'block';
-            initCalculator();
-        } else {
-            alert("Неверный логин или пароль!");
+        if (!services || services.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст.</div>';
+            return;
         }
+
+        services.forEach((item) => {
+            const div = document.createElement('div');
+            if (item.isCategory) {
+                div.className = 'service-item category-item';
+                div.innerHTML = `<span>📁 <b>${item.name}</b></span>`;
+            } else {
+                div.className = 'service-item';
+                div.innerHTML = `<span>${item.name}</span><span><b>${Number(item.price).toLocaleString('ru-RU')} ₽</b></span>`;
+            }
+            list.appendChild(div);
+        });
     }
 
-    function initCalculator() {
-        populateServiceSelect();
-        renderHistory();
-    }
-
-    function populateServiceSelect() {
-        const select = document.getElementById('serviceSelect');
-        select.innerHTML = '';
-        const services = cloudData.services || [];
+    async function sharePriceText() {
+        let text = "📋 ПРАЙС-ЛИСТ РАБОТ И УСЛУГ\n";
+        text += `📅 Актуально на: ${new Date().toLocaleDateString('ru-RU')}\n`;
+        text += "-----------------------------------\n";
+        text += "💡 Правило погонных метров: Стоимость за пог. м равна стоимости за м² для элементов короче 1 метра.\n";
+        text += "-----------------------------------\n";
 
         services.forEach(srv => {
-            if (!srv.isCategory) {
-                const opt = document.createElement('option');
-                opt.value = srv.price;
-                opt.textContent = `${srv.name} — ${Number(srv.price).toLocaleString('ru-RU')} ₽`;
-                opt.dataset.name = srv.name;
-                select.appendChild(opt);
-            }
-        });
-    }
-
-    function toggleDimensions() {
-        const type = document.getElementById('calcType').value;
-        if (type === 'linear') {
-            document.getElementById('qtyGroup').style.display = 'none';
-            document.getElementById('linearGroup').style.display = 'block';
-        } else {
-            document.getElementById('qtyGroup').style.display = 'block';
-            document.getElementById('linearGroup').style.display = 'none';
-        }
-    }
-
-    function addPositionToInvoice() {
-        const select = document.getElementById('serviceSelect');
-        if (select.options.length === 0) {
-            alert("В прайс-листе нет доступных услуг!");
-            return;
-        }
-
-        const selectedOpt = select.options[select.selectedIndex];
-        const serviceName = selectedOpt.dataset.name;
-        const unitPrice = Number(selectedOpt.value);
-        const type = document.getElementById('calcType').value;
-
-        let finalQty = 0;
-        let detailsText = "";
-
-        if (type === 'qty') {
-            finalQty = Number(document.getElementById('itemQty').value);
-            if (isNaN(finalQty) || finalQty <= 0) {
-                alert("Введите корректное количество!");
-                return;
-            }
-            detailsText = `${finalQty} ед.`;
-        } else {
-            let l = Number(document.getElementById('sideLength').value);
-            let w = Number(document.getElementById('sideWidth').value);
-            if (isNaN(l) || isNaN(w) || l <= 0 || w <= 0) {
-                alert("Введите корректные размеры сторон!");
-                return;
-            }
-            let calcL = l < 1 ? 1 : l;
-            let calcW = w < 1 ? 1 : w;
-            finalQty = calcL * calcW;
-            detailsText = `Стороны: ${l}м × ${w}м (с учётом округления до п.м.)`;
-        }
-
-        const sum = unitPrice * finalQty;
-
-        currentInvoiceItems.push({
-            name: serviceName,
-            price: unitPrice,
-            qty: finalQty,
-            details: detailsText,
-            sum: sum
-        });
-
-        renderInvoiceItems();
-    }
-
-    function removeInvoiceItem(idx) {
-        currentInvoiceItems.splice(idx, 1);
-        renderInvoiceItems();
-    }
-
-    function renderInvoiceItems() {
-        const container = document.getElementById('invoiceItemsContainer');
-        container.innerHTML = '';
-
-        if (currentInvoiceItems.length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #888; padding: 10px;">Счёт пока пуст</div>';
-            document.getElementById('invoiceTotal').textContent = '0';
-            return;
-        }
-
-        let total = 0;
-        currentInvoiceItems.forEach((item, idx) => {
-            total += item.sum;
-            const div = document.createElement('div');
-            div.className = 'calc-item';
-            div.innerHTML = `
-                <div class="calc-item-info">
-                    <div class="calc-item-title">${item.name}</div>
-                    <div class="calc-item-details">${item.details} | Цена за ед.: ${item.price.toLocaleString('ru-RU')} ₽</div>
-                </div>
-                <div class="calc-item-sum">${item.sum.toLocaleString('ru-RU')} ₽</div>
-                <button type="button" class="btn btn-danger" onclick="removeInvoiceItem(${idx})">✕</button>
-            `;
-            container.appendChild(div);
-        });
-
-        document.getElementById('invoiceTotal').textContent = total.toLocaleString('ru-RU');
-    }
-
-    async function generateInvoicePDF() {
-        if (currentInvoiceItems.length === 0) {
-            alert("Добавьте хотя бы одну позицию в счёт!");
-            return;
-        }
-
-        const clientName = document.getElementById('clientName').value.trim() || "Клиент";
-        const dateStr = new Date().toLocaleDateString('ru-RU');
-        let totalSum = currentInvoiceItems.reduce((acc, item) => acc + item.sum, 0);
-
-        const element = document.createElement('div');
-        element.style.padding = '25px';
-        element.style.background = '#ffffff';
-        element.style.fontFamily = 'Arial, sans-serif';
-        element.style.color = '#333';
-        element.style.width = '700px';
-        element.style.boxSizing = 'border-box';
-
-        let rowsHtml = '';
-        currentInvoiceItems.forEach(item => {
-            rowsHtml += `
-                <tr>
-                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 13px;">${item.name}</td>
-                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 12px; text-align: center; color: #555;">${item.details}</td>
-                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: right; font-weight: bold; color: #28a745; white-space: nowrap;">${item.sum.toLocaleString('ru-RU')} ₽</td>
-                </tr>
-            `;
-        });
-
-        element.innerHTML = `
-            <h2 style="color: #28a745; border-bottom: 2px solid #28a745; padding-bottom: 10px; margin-top: 0; text-align: center;">СЧЁТ НА ОПЛАТУ РАБОТ</h2>
-            
-            <table style="width: 100%; margin-bottom: 20px; font-size: 13px;">
-                <tr>
-                    <td style="text-align: left;"><b>Заказчик:</b> ${clientName}</td>
-                    <td style="text-align: right;"><b>Дата:</b> ${dateStr}</td>
-                </tr>
-            </table>
-
-            <div style="background-color: #f8f9fa; border: 1px solid #ddd; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #555; line-height: 1.4; border-radius: 4px;">
-                <b>Правило расчёта погонных метров:</b> Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
-            </div>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <thead>
-                    <tr style="background-color: #e9ecef;">
-                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: left;">Услуга</th>
-                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: center;">Параметры</th>
-                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: right;">Сумма</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                </tbody>
-            </table>
-
-            <div style="text-align: right; font-size: 18px; font-weight: bold; color: #004085; margin-top: 15px;">
-                Итого к оплате: ${totalSum.toLocaleString('ru-RU')} ₽
-            </div>
-        `;
-
-        const opt = {
-            margin:       10,
-            filename:     `Schet_${clientName.replace(/\s+/g, '_')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
-        };
-
-        try {
-            const worker = html2pdf().from(element).set(opt);
-            const pdfBlob = await worker.outputPdf('blob');
-            const pdfFile = new File([pdfBlob], opt.filename, { type: "application/pdf" });
-
-            await saveHistoryToCloud(clientName, totalSum, currentInvoiceItems);
-
-            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                await navigator.share({
-                    files: [pdfFile],
-                    title: 'Счёт на оплату услуг',
-                    text: `Счёт для клиента ${clientName} на сумму ${totalSum.toLocaleString('ru-RU')} ₽`
-                });
+            if (srv.isCategory) {
+                text += `\n📁 *${srv.name}*\n`;
             } else {
-                worker.save();
+                text += `• ${srv.name} — *${Number(srv.price).toLocaleString('ru-RU')} ₽*\n`;
             }
-        } catch (error) {
-            console.error("Ошибка при генерации/отправке счёта:", error);
-            html2pdf().from(element).set(opt).save();
-        }
-    }
+        });
 
-    async function saveHistoryToCloud(clientName, totalSum, items) {
-        if (!cloudData.history) cloudData.history = [];
-        
-        const newRecord = {
-            date: new Date().toLocaleString('ru-RU'),
-            client: clientName,
-            total: totalSum,
-            items: items
-        };
-
-        cloudData.history.unshift(newRecord);
-
-        try {
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Master-Key": MASTER_KEY
-                },
-                body: JSON.stringify(cloudData)
-            });
-            renderHistory();
-        } catch (e) {
-            console.error("Не удалось сохранить историю в облако:", e);
-        }
-    }
-
-    function renderHistory() {
-        const container = document.getElementById('historyContainer');
-        container.innerHTML = '';
-        const history = cloudData.history || [];
-
-        if (history.length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #888; padding: 10px;">История пуста</div>';
-            return;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Прайс-лист', text: text });
+                return;
+            } catch (e) {}
         }
 
-        history.forEach(rec => {
-            const div = document.createElement('div');
-            div.className = 'history-card';
-            
-            let itemsSummary = rec.items.map(i => `${i.name} (${i.details})`).join(', ');
-
-            div.innerHTML = `
-                <div class="history-header">
-                    <span>👤 ${rec.client}</span>
-                    <span style="color: #28a745;">${Number(rec.total).toLocaleString('ru-RU')} ₽</span>
-                </div>
-                <div class="history-details">
-                    <div><b>Дата:</b> ${rec.date}</div>
-                    <div><b>Позиции:</b> ${itemsSummary}</div>
-                </div>
-            `;
-            container.appendChild(div);
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Прайс-лист скопирован в буфер обмена!");
+        }).catch(() => {
+            prompt("Скопируйте текст прайса:", text);
         });
     }
 </script>
