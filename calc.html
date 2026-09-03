@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Прямое подключение html2canvas и jsPDF вместо нестабильного html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
@@ -42,7 +44,7 @@
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-        #printArea { position: fixed; left: -9999px; top: 0; width: 190mm; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
+        #printArea { position: fixed; left: -9999px; top: 0; width: 750px; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
     </style>
 </head>
 <body>
@@ -317,6 +319,7 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
+    // Прямой рендеринг: html2canvas -> jsPDF -> Web Share API
     async function sendPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -356,31 +359,44 @@
 
         const element = document.getElementById('printArea');
 
-        // Делаем элемент видимым на экране для скриншота
-        element.style.position = 'absolute';
+        // Временно показываем печатный блок прямо в видимой области для захвата кадра
+        element.style.position = 'fixed';
         element.style.top = '0';
         element.style.left = '0';
         element.style.zIndex = '999999';
         element.style.opacity = '1';
         element.style.backgroundColor = '#ffffff';
 
-        // Пауза 150 мс для гарантированной перерисовки DOM браузером
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        const fileName = `Schet_${client || 'zakazchik'}.pdf`;
-        const opt = {
-            margin:       10,
-            filename:     fileName,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+        // Пауза 100мс для гарантированной перерисовки браузером
+        await new Promise(r => setTimeout(r, 100));
 
         try {
-            // Вызов правильно скомпилированного метода генерации Blob
-            const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+            // 1. Делаем снимок холста через html2canvas
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false
+            });
+
+            // 2. Получаем картинку с холста
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+            // 3. Создаем PDF с помощью jsPDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210 мм
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+            // 4. Генерируем реальный файл PDF в формате Blob
+            const pdfBlob = pdf.output('blob');
+            const fileName = `Schet_${client || 'zakazchik'}.pdf`;
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
+            // 5. Отправка через системное меню
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     title: 'Счет на оплату',
@@ -388,20 +404,21 @@
                     files: [file]
                 });
             } else {
+                // Если не поддерживается на ПК — даем скачанный файл без сбоя
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(pdfBlob);
                 link.download = fileName;
                 link.click();
                 URL.revokeObjectURL(link.href);
-                alert("Устройство не поддерживает прямую отправку из браузера, файл был скачан.");
+                alert("Прямая отправка не поддерживается текущим браузером, файл успешно сгенерирован и скачан.");
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
-                console.error("Ошибка при отправке PDF:", err);
-                alert("Не удалось отправить PDF.");
+                console.error("Ошибка при создании PDF:", err);
+                alert("Ошибка при сборке PDF: " + err.message);
             }
         } finally {
-            // Скрываем печатную область обратно
+            // Убираем область обратно
             element.style.position = 'fixed';
             element.style.left = '-9999px';
             element.style.opacity = '0';
