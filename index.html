@@ -21,7 +21,7 @@
         .info-box { background: #eef7ff; border: 1px solid #bce0fd; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; font-size: 13px; color: #004085; line-height: 1.4; }
         .info-box b { display: block; margin-bottom: 4px; font-size: 14px; color: #0056b3; }
         
-        .category-header { background: #e9ecef; font-weight: bold; padding: 12px; border-radius: 6px; margin: 20px 0 10px 0; font-size: 16px; color: #495057; display: flex; justify-content: space-between; align-items: center; }
+        .category-header { background: #e9ecef; font-weight: bold; padding: 12px; border-radius: 6px; margin: 20px 0 10px 0; font-size: 16px; color: #495057; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .service-info { flex: 1; padding-right: 10px; }
         .service-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: #222; }
@@ -66,14 +66,10 @@
             <button type="button" class="btn btn-danger btn-sm" onclick="logoutAdmin()">Выйти из админки</button>
         </div>
         <div class="form-group">
-            <label>Название услуги или категории</label>
+            <label>Название новой категории</label>
             <input type="text" id="newName" placeholder="Например: Укладка плитки">
         </div>
-        <div class="form-group">
-            <label>Цена (оставьте пустым, если это категория)</label>
-            <input type="number" id="newPrice" placeholder="Например: 1000">
-        </div>
-        <button type="button" class="btn btn-success" onclick="addServiceItem()">➕ Добавить в прайс</button>
+        <button type="button" class="btn btn-success" onclick="addCategoryItem()">➕ Создать новую категорию</button>
     </div>
 
     <div id="loader" class="loader">⏳ Загрузка прайса из облака...</div>
@@ -177,8 +173,9 @@
                 cat.className = 'category-header';
                 let adminBtns = isAdmin ? `
                     <div class="action-row">
-                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})">✏️ Изменить</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">Удалить</button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="addServiceToCategory(${idx})" title="Добавить услугу в эту категорию">➕ Услуга</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Переименовать категорию">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})" title="Удалить категорию">🗑</button>
                     </div>
                 ` : '';
                 cat.innerHTML = `<span>📂 ${escapeHtml(srv.name)}</span>${adminBtns}`;
@@ -202,6 +199,46 @@
                 container.appendChild(card);
             }
         });
+    }
+
+    async function addCategoryItem() {
+        const name = document.getElementById('newName').value.trim();
+        if (!name) {
+            alert('Введите название категории!');
+            return;
+        }
+
+        if (!cloudData.services) cloudData.services = [];
+        cloudData.services.push({ name, price: 0, isCategory: true });
+
+        await saveCloudData();
+        document.getElementById('newName').value = '';
+        renderPriceList();
+        alert('Категория добавлена!');
+    }
+
+    async function addServiceToCategory(catIdx) {
+        const name = prompt("Наименование услуги:");
+        if (!name || name.trim() === "") return;
+
+        const priceStr = prompt("Цена услуги в ₽:");
+        if (priceStr === null) return;
+
+        const price = Number(priceStr.trim());
+        if (isNaN(price) || price < 0) {
+            alert("Укажите корректную стоимость!");
+            return;
+        }
+
+        // Поиск конца текущей категории (перед началом следующей или в конец массива)
+        let insertIdx = catIdx + 1;
+        while (insertIdx < cloudData.services.length && !cloudData.services[insertIdx].isCategory) {
+            insertIdx++;
+        }
+
+        cloudData.services.splice(insertIdx, 0, { name: name.trim(), price, isCategory: false });
+        await saveCloudData();
+        renderPriceList();
     }
 
     async function editServiceItem(idx) {
@@ -289,33 +326,6 @@
         } catch (error) {
             html2pdf().from(element).set(opt).save();
         }
-    }
-
-    async function addServiceItem() {
-        const name = document.getElementById('newName').value.trim();
-        const priceVal = document.getElementById('newPrice').value.trim();
-
-        if (!name) {
-            alert('Введите название!');
-            return;
-        }
-
-        const isCategory = priceVal === '';
-        let price = isCategory ? 0 : Number(priceVal);
-
-        if (!isCategory && (isNaN(price) || price < 0)) {
-            alert('Введите корректную стоимость!');
-            return;
-        }
-
-        if (!cloudData.services) cloudData.services = [];
-        cloudData.services.push({ name, price, isCategory });
-
-        await saveCloudData();
-        document.getElementById('newName').value = '';
-        document.getElementById('newPrice').value = '';
-        renderPriceList();
-        alert('Добавлено в прайс!');
     }
 
     async function deleteServiceItem(idx) {
