@@ -27,7 +27,8 @@
 
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: #fff; color: #0f172a; outline: none; -webkit-appearance: none; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: #fff; color: #0f172a; outline: none; -webkit-appearance: none; }
+        .form-group textarea { resize: vertical; min-height: 70px; }
         
         /* Стили аккордеона */
         .accordion-category { margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
@@ -85,7 +86,7 @@
             .container { padding: 28px; }
             h1 { font-size: 20px; }
             h2 { font-size: 16px; }
-            .form-group input, .form-group select, .unit-row input, .unit-row select { font-size: 14px; }
+            .form-group input, .form-group select, .form-group textarea, .unit-row input, .unit-row select { font-size: 14px; }
             .tab-btn { flex: 1; }
         }
     </style>
@@ -133,6 +134,10 @@
         <div class="form-group">
             <label>Адрес объекта</label>
             <input type="text" id="objectAddress" placeholder="ул. Ленина, д. 1">
+        </div>
+        <div class="form-group">
+            <label>Пояснение / Детали к счёту</label>
+            <textarea id="invoiceNote" placeholder="Например: Предоплата 50%, срок выполнения 3 дня..."></textarea>
         </div>
 
         <h2>🛠 Выберите услуги:</h2>
@@ -234,6 +239,7 @@
         
         document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
         document.getElementById('objectAddress').addEventListener('input', updateInvoiceInfo);
+        document.getElementById('invoiceNote').addEventListener('input', updateInvoiceInfo);
     });
 
     async function loadCloudData() {
@@ -338,7 +344,6 @@
         if (tab === 'users') renderUsersList();
     }
 
-    // Функция переключения аккордеона
     function toggleAccordion(headerEl) {
         const categoryBlock = headerEl.closest('.accordion-category');
         const isOpen = categoryBlock.classList.contains('open');
@@ -396,7 +401,7 @@
             const categoryBlock = document.createElement('div');
             categoryBlock.className = 'accordion-category';
             if (query) {
-                categoryBlock.classList.add('open'); // Автоматически раскрывать при поиске
+                categoryBlock.classList.add('open');
             }
 
             const catName = group.category ? group.category.name : "Без категории";
@@ -485,10 +490,12 @@
         if (!info) return;
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
+        const note = document.getElementById('invoiceNote').value.trim();
         
         let html = '';
         if (client) html += `<b>Заказчик:</b> ${escapeHtml(client)}<br>`;
-        if (address) html += `<b>Адрес:</b> ${escapeHtml(address)}`;
+        if (address) html += `<b>Адрес:</b> ${escapeHtml(address)}<br>`;
+        if (note) html += `<b>Пояснение:</b> ${escapeHtml(note)}`;
         info.innerHTML = html;
     }
 
@@ -531,6 +538,7 @@
 
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
+        const note = document.getElementById('invoiceNote').value.trim();
         const dateStr = new Date().toLocaleDateString('ru-RU');
 
         let rows = '';
@@ -565,6 +573,7 @@
             <p style="margin: 6px 0; font-size: 14px;"><b>Дата:</b> ${dateStr}</p>
             ${client ? `<p style="margin: 6px 0; font-size: 14px;"><b>Заказчик:</b> ${escapeHtml(client)}</p>` : ''}
             ${address ? `<p style="margin: 6px 0; font-size: 14px;"><b>Адрес объекта:</b> ${escapeHtml(address)}</p>` : ''}
+            ${note ? `<p style="margin: 6px 0; font-size: 14px;"><b>Пояснение:</b> ${escapeHtml(note)}</p>` : ''}
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
                 <thead>
                     <tr style="background-color: #f8fafc;">
@@ -643,6 +652,7 @@
 
         const client = document.getElementById('clientName').value.trim() || "Без имени";
         const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
+        const note = document.getElementById('invoiceNote').value.trim();
         let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
 
         const uniqueId = 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
@@ -653,6 +663,7 @@
             date: new Date().toLocaleString('ru-RU'),
             client,
             address,
+            note,
             total,
             items: [...invoiceCart]
         };
@@ -697,6 +708,7 @@
                     ${isCurrentAdmin() ? `<div style="font-size:11px; color:#64748b; margin-bottom:4px;">Мастер: <b>${escapeHtml(masterName)}</b></div>` : ''}
                     <div>👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}</div>
                     <div>📍 <b>Адрес:</b> ${escapeHtml(rec.address)}</div>
+                    ${rec.note ? `<div>📝 <b>Пояснение:</b> ${escapeHtml(rec.note)}</div>` : ''}
                     <div style="margin: 8px 0; border-top: 1px dashed #e2e8f0; padding-top: 6px; color: #475569; font-size:12px;">${itemsHtml}</div>
                     <b style="color:#059669; font-size: 14px;">Итого: ${Number(rec.total || 0).toLocaleString('ru-RU')} ₽</b>
                 </div>
@@ -753,7 +765,7 @@
     function renderUsersList() {
         const list = document.getElementById('usersListContainer');
         if (!list) return;
-        list.innerHTML = `[cite: 3]`;
+        list.innerHTML = '';
 
         if (!cloudData.users || cloudData.users.length === 0) {
             list.innerHTML = '<div style="color:#94a3b8; font-size:13px;">Список пуст</div>';
@@ -815,6 +827,7 @@
     function resetAll() {
         document.getElementById('clientName').value = '';
         document.getElementById('objectAddress').value = '';
+        document.getElementById('invoiceNote').value = '';
         invoiceCart = [];
         renderServices();
     }
