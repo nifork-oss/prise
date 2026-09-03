@@ -63,6 +63,7 @@
         .btn-success { background: #10b981; color: white; }
         .btn-primary { background: #4f46e5; color: white; }
         .btn-danger { background: #f43f5e; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
         .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; border-radius: 6px; min-height: unset; }
 
         .tab-menu { display: flex; gap: 6px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; scrollbar-width: none; }
@@ -400,11 +401,9 @@
             return;
         }
 
-        // Добавляем нового пользователя с ролью master
         cloudData.users.push({ login: l, email: email, pass: p, role: 'master' });
         await saveCloudData();
 
-        // Сразу авторизуем его
         currentUser = l;
         localStorage.setItem('currentUser', currentUser);
         localStorage.removeItem('isAdminAuthorized');
@@ -916,17 +915,31 @@
             const isSelf = u.login === currentUser;
             const badgeClass = u.role === 'admin' ? 'badge-admin' : 'badge-master';
             const roleName = u.role === 'admin' ? 'Админ' : 'Мастер';
+            const roleBtnText = u.role === 'admin' ? 'Сделать мастером' : 'Сделать админом';
+            const roleBtnClass = u.role === 'admin' ? 'btn-warning' : 'btn-primary';
 
             list.innerHTML += `
                 <div class="user-card">
-                    <div>
+                    <div style="flex: 1; min-width: 0; padding-right: 8px;">
                         <b>👤 ${escapeHtml(u.login)}</b> <span class="badge ${badgeClass}">${roleName}</span><br>
-                        <span style="color:#64748b; font-size:11px;">✉️ ${escapeHtml(u.email || 'нет почты')} | Пароль: <code>${escapeHtml(u.pass)}</code></span>
+                        <span style="color:#64748b; font-size:11px; word-break: break-all;">✉️ ${escapeHtml(u.email || 'нет почты')} | Пароль: <code>${escapeHtml(u.pass)}</code></span>
                     </div>
-                    ${!isSelf ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${idx})">Удалить</button>` : '<span style="font-size:11px; color:#94a3b8; font-weight:600;">Вы</span>'}
+                    <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
+                        ${!isSelf ? `<button type="button" class="btn ${roleBtnClass} btn-sm" onclick="toggleUserRole(${idx})">${roleBtnText}</button>` : ''}
+                        ${!isSelf ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${idx})">Удалить</button>` : '<span style="font-size:11px; color:#94a3b8; font-weight:600;">Вы</span>'}
+                    </div>
                 </div>
             `;
         });
+    }
+
+    async function toggleUserRole(idx) {
+        const u = cloudData.users[idx];
+        if (!u) return;
+
+        u.role = u.role === 'admin' ? 'master' : 'admin';
+        await saveCloudData();
+        renderUsersList();
     }
 
     async function addNewUser() {
