@@ -1,10 +1,11 @@
-html
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
@@ -42,12 +43,9 @@ html
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-        #printArea { display: none; }
-        @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 10px; background: white; }
-        }
+        
+        /* Скрытая зона для генерации чистого PDF без лишних страниц */
+        #printArea { position: fixed; left: -9999px; top: 0; width: 190mm; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
     </style>
 </head>
 <body>
@@ -97,7 +95,7 @@ html
         </div>
 
         <div class="action-btns">
-            <button type="button" class="btn btn-success" onclick="triggerNativePrintPDF()">📄 Сохранить в PDF / Печать</button>
+            <button type="button" class="btn btn-success" onclick="triggerChromePrintPDF()">📄 Сохранить в PDF</button>
             <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
@@ -127,7 +125,8 @@ html
         <tbody id="printTableBody"></tbody>
     </table>
     <h3 style="text-align: right; margin-top: 25px;">ИТОГО К ОПЛАТЕ: <span id="printTotalSum"></span> ₽</h3>
-</div>```html
+</div>
+``````html
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
@@ -302,7 +301,7 @@ html
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function triggerNativePrintPDF() {
+    function triggerChromePrintPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
             return;
@@ -332,7 +331,37 @@ html
         document.getElementById('printTableBody').innerHTML = rows;
         document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
 
-        window.print();
+        const element = document.getElementById('printArea');
+
+        element.style.position = 'absolute';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.zIndex = '999999';
+        element.style.opacity = '1';
+        element.style.backgroundColor = '#ffffff';
+
+        const opt = {
+            margin:       10,
+            filename:     `Schet_${client || 'zakazchik'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        setTimeout(() => {
+            html2pdf().from(element).set(opt).save().then(() => {
+                element.style.position = 'fixed';
+                element.style.left = '-9999px';
+                element.style.opacity = '0';
+                element.style.zIndex = '-9999';
+            }).catch(err => {
+                console.error(err);
+                element.style.position = 'fixed';
+                element.style.left = '-9999px';
+                element.style.opacity = '0';
+                element.style.zIndex = '-9999';
+            });
+        }, 300);
     }
 
     async function saveInvoiceToHistory() {
@@ -411,4 +440,4 @@ html
 
 </body>
 </html>
-
+```
