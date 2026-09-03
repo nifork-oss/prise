@@ -67,11 +67,17 @@
         .btn-wa { background: #25d366; color: white; }
         .btn-sm { padding: 5px 8px; font-size: 11px; min-height: 30px; border-radius: 6px; }
 
-        /* Специальные стили тумблера изоляции */
-        .btn-iso-active { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 700; }
-        .btn-iso-inactive { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        /* Визуальный переключатель-тумблер */
+        .switch-container { display: flex; align-items: center; background: #f1f5f9; padding: 4px 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: #f43f5e; }
+        input:checked + .slider:before { transform: translateX(18px); }
+        .switch-label { font-size: 11px; font-weight: 700; color: #475569; margin-right: 6px; user-select: none; }
 
-        .admin-actions { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+        .admin-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 24px; font-size: 14px; }
         .empty-state { text-align: center; color: #94a3b8; padding: 30px 10px; font-size: 14px; }
 
@@ -106,7 +112,7 @@
         .calc-item-info { flex: 1; }
         .calc-item-name { font-size: 13px; font-weight: 600; color: #1e293b; }
         .calc-item-price { font-size: 13px; font-weight: 700; color: #059669; }
-        .isolated-badge { font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+        .isolated-badge { font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; display: inline-block; }
 
         .modal-footer { padding: 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
         .calc-summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
@@ -315,7 +321,6 @@
         renderServices(document.getElementById('searchInput').value);
     }
 
-    /* Быстрое переключение изоляции услуги в 1 клик */
     function toggleSquareIsolation(idx) {
         if (cloudData.services[idx]) {
             cloudData.services[idx].excludeFromSquare = !cloudData.services[idx].excludeFromSquare;
@@ -404,11 +409,13 @@
                         </div>
                         ${isAdmin ? `
                             <div class="admin-actions">
-                                <button class="btn btn-sm ${isIsolated ? 'btn-iso-active' : 'btn-iso-inactive'}" 
-                                        title="${isIsolated ? 'Услуга изолирована от расчета 1 м²' : 'Услуга разрешена в расчете 1 м²'}" 
-                                        onclick="toggleSquareIsolation(${idx})">
-                                    ${isIsolated ? '🔒 1 м²' : '🔓 1 м²'}
-                                </button>
+                                <div class="switch-container" title="${isIsolated ? 'Услуга изолирована от расчета 1 м²' : 'Услуга разрешена в расчете 1 м²'}">
+                                    <span class="switch-label">${isIsolated ? '🔒 Изолир.' : '🔓 1 м²'}</span>
+                                    <label class="switch">
+                                        <input type="checkbox" ${isIsolated ? 'checked' : ''} onchange="toggleSquareIsolation(${idx})">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
                                 <button class="btn btn-primary btn-sm" onclick="editItem(${idx})">✏️</button>
                                 <button class="btn btn-danger btn-sm" onclick="deleteItem(${idx})">🗑</button>
                                 <button class="btn btn-sm" style="background:#e2e8f0;" onclick="moveItem(${idx}, -1)">▲</button>
@@ -460,7 +467,7 @@
                 container.appendChild(catHeader);
             } else {
                 const unit = item.unit || 'м²';
-                const isExcluded = !!item.excludeFromSquare; // Флаг изоляции
+                const isExcluded = !!item.excludeFromSquare;
 
                 const row = document.createElement('label');
                 row.className = `calc-select-item ${isExcluded ? 'disabled-item' : ''}`;
@@ -515,7 +522,6 @@
         document.getElementById('totalBudget').textContent = `${totalBudget.toLocaleString('ru-RU')} ₽`;
     }
 
-    /* Генерация текстового отчета */
     function generateReportText() {
         const services = cloudData.services || [];
         const area = parseFloat(document.getElementById('roomArea').value) || 1;
