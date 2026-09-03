@@ -64,7 +64,7 @@
         .btn-success { background: #10b981; color: white; }
         .btn-primary { background: #4f46e5; color: white; }
         .btn-danger { background: #f43f5e; color: white; }
-        .btn-wa { background: #25d366; color: white; }
+        .btn-share { background: #0284c7; color: white; }
         .btn-sm { padding: 5px 8px; font-size: 11px; min-height: 30px; border-radius: 6px; }
 
         .switch-container { display: flex; align-items: center; background: #f1f5f9; padding: 4px 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
@@ -249,7 +249,7 @@
 
             <div class="action-buttons-group">
                 <button type="button" class="btn btn-primary" onclick="downloadPDF()" style="flex: 1;">📥 Скачать PDF</button>
-                <button type="button" class="btn btn-wa" onclick="shareToWhatsApp()" style="flex: 1;">💬 В WhatsApp</button>
+                <button type="button" class="btn btn-share" onclick="sharePDF()" style="flex: 1;">📤 Отправить PDF</button>
             </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="width: 100%;">🔄 Сбросить выбор</button>
         </div>
@@ -645,7 +645,6 @@
         return { pricePerMeter, total, itemsList, area };
     }
 
-    // Функция сохранения копии у администратора в облако
     async function saveHistoryToCloud(objectName, reportData) {
         if (!Array.isArray(cloudData.history)) {
             cloudData.history = [];
@@ -660,7 +659,6 @@
             items: reportData.itemsList
         };
 
-        // Сохраняем в историю (оставляем последние 50 расчетов)
         cloudData.history.unshift(newRecord);
         if (cloudData.history.length > 50) {
             cloudData.history.pop();
@@ -677,24 +675,16 @@
         }
     }
 
-    async function downloadPDF() {
-        const data = generateReportData();
-        if (!data) {
-            alert("Выберите хотя бы одну услугу из списка!");
-            return;
-        }
-
-        // Запрашиваем у заказчика название объекта
+    // Подготовка PDF шаблона с именем объекта и датой
+    async function preparePdfDOM(data) {
         let objectName = prompt("Введите название объекта / имя заказчика:", "Квартира (Объект №1)");
-        if (objectName === null) return; // Нажали отмену
+        if (objectName === null) return null; 
         objectName = objectName.trim() || "Без названия";
 
-        // Форматируем текущую дату
         const now = new Date();
         const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
                         ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-        // Заполняем PDF-шаблон
         document.getElementById('pdfObjTitle').textContent = `Смета: ${objectName}`;
         document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
         document.getElementById('pdfAreaVal').textContent = data.area;
@@ -713,8 +703,22 @@
             tbody.appendChild(tr);
         });
 
-        // Автоматически сохраняем копию у администратора в фоне
+        // Отправка копии админу в фоне
         await saveHistoryToCloud(objectName, data);
+
+        return objectName;
+    }
+
+    // Обычное скачивание с подсказкой
+    async function downloadPDF() {
+        const data = generateReportData();
+        if (!data) {
+            alert("Выберите хотя бы одну услугу из списка!");
+            return;
+        }
+
+        const objectName = await preparePdfDOM(data);
+        if (!objectName) return;
 
         const element = document.getElementById('pdfTemplate');
         element.style.display = 'block';
@@ -730,28 +734,52 @@
 
         html2pdf().from(element).set(opt).save().then(() => {
             element.style.display = 'none';
+            alert("✅ Смета успешно сохранена!");
         });
     }
 
-    function shareToWhatsApp() {
+    // Отправка PDF (вызывает системное меню «Поделиться» на телефонах)
+    async function sharePDF() {
         const data = generateReportData();
         if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
 
-        let itemsText = data.itemsList.map(i => `• ${i.name} — ${i.price.toLocaleString('ru-RU')} ₽`).join('\n');
-        let text = `📋 *СМЕТА РАБОТ НА 1 м²*\n` +
-                   `-----------------------------------\n` +
-                   `*Состав работ ("пирог"):*\n` + itemsText + `\n\n` +
-                   `📐 *Площадь:* ${data.area} м²\n` +
-                   `💵 *Цена за 1 м²:* ${data.pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
-                   `💰 *Итоговая стоимость:* ${data.total.toLocaleString('ru-RU')} ₽\n` +
-                   `-----------------------------------\n` +
-                   `⚠️ *Примечание:* Погонные метры (плинтусы, примыкания) и скрытые работы считаются отдельно по факту замера.`;
+        const objectName = await preparePdfDOM(data);
+        if (!objectName) return;
 
-        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
+        const element = document.getElementById('pdfTemplate');
+        element.style.display = 'block';
+
+        const safeFileName = objectName.replace(/[^a-zA-Zа-яА-Я0-9-_]/g, '_') + '.pdf';
+        
+        // Генерация PDF в Blob для отправки через Web Share API
+        html2pdf().from(element).outputPdf('blob').then(async (pdfBlob) => {
+            element.style.display = 'none';
+            const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Смета на отделочные работы',
+                        text: `Смета по объекту: ${objectName}`,
+                        files: [file]
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error("Ошибка при отправке файла:", err);
+                    }
+                }
+            } else {
+                // Запасной вариант для десктопов или неподдерживаемых браузеров
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = safeFileName;
+                link.click();
+                alert("Ваш браузер не поддерживает прямую отправку файлов, смета сохранена на устройство.");
+            }
+        });
     }
 
     /* Админ функции */
