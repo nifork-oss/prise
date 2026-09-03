@@ -31,7 +31,6 @@
         .search-box input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px; pointer-events: none; }
 
-        /* Категории и карточки */
         .category-group { margin-bottom: 8px; }
         .category-header { 
             background: #f8fafc; font-weight: 700; padding: 12px 14px; border-radius: 10px; margin: 8px 0; font-size: 14px; color: #334155; 
@@ -49,25 +48,29 @@
         .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
         .service-name { font-weight: 600; font-size: 14px; color: #0f172a; word-break: break-word; }
         .service-price { color: #059669; font-weight: 700; font-size: 15px; white-space: nowrap; }
+        .unit-tag-small { font-size: 11px; color: #64748b; font-weight: 500; }
 
-        /* Админка */
         .admin-panel { background: #f5f3ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
         .admin-title { font-size: 14px; font-weight: 700; color: #4338ca; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
         .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; background: #fff; }
 
+        .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; font-weight: 600; cursor: pointer; margin-top: 8px; }
+        .checkbox-label input { width: 18px; height: 18px; accent-color: #f43f5e; cursor: pointer; }
+
         .btn { padding: 10px 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-success { background: #10b981; color: white; }
         .btn-primary { background: #4f46e5; color: white; }
         .btn-danger { background: #f43f5e; color: white; }
+        .btn-wa { background: #25d366; color: white; }
         .btn-sm { padding: 5px 8px; font-size: 11px; min-height: 30px; border-radius: 6px; }
 
         .admin-actions { display: flex; gap: 4px; align-items: center; }
         .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 24px; font-size: 14px; }
         .empty-state { text-align: center; color: #94a3b8; padding: 30px 10px; font-size: 14px; }
 
-        /* Модальное окно конструктора сметы */
+        /* Модальное окно калькулятора */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: flex-end; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
         .modal-container { background: #ffffff; width: 100%; max-width: 680px; max-height: 90vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -10px 25px rgba(0,0,0,0.15); animation: slideUp 0.25s ease-out; }
@@ -83,7 +86,6 @@
 
         .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
 
-        /* Информационная плашка про работы вне квадратного метра */
         .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #1e40af; line-height: 1.5; }
         .info-box strong { color: #1e3a8a; display: block; margin-bottom: 4px; font-size: 13px; }
 
@@ -93,14 +95,19 @@
 
         .calc-select-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #f1f5f9; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s; }
         .calc-select-item:hover { background: #f8fafc; }
+        .calc-select-item.disabled-item { opacity: 0.6; background: #f8fafc; cursor: not-allowed; }
         .calc-select-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4f46e5; cursor: pointer; }
+        .calc-select-item input[type="checkbox"]:disabled { cursor: not-allowed; }
         .calc-item-info { flex: 1; }
         .calc-item-name { font-size: 13px; font-weight: 600; color: #1e293b; }
         .calc-item-price { font-size: 13px; font-weight: 700; color: #059669; }
+        .isolated-badge { font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
 
         .modal-footer { padding: 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
         .calc-summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         .calc-total-big { font-size: 18px; font-weight: 800; color: #4f46e5; }
+
+        .action-buttons-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 
         @media (min-width: 481px) {
             body { padding: 20px 15px; }
@@ -144,19 +151,41 @@
 
         <div id="addForm" style="display: none; background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; margin-bottom: 12px;">
             <h4 id="formTitle" style="margin: 0 0 10px 0; font-size: 13px; color: #0f172a;">Добавление</h4>
+            
             <div class="form-group" id="categorySelectGroup">
                 <label>Выберите категорию</label>
                 <select id="targetCategorySelect"></select>
             </div>
+            
             <div class="form-group">
                 <label id="itemNameLabel">Название</label>
                 <input type="text" id="itemName" placeholder="Наименование...">
             </div>
-            <div class="form-group" id="priceGroup">
-                <label>Цена (₽)</label>
-                <input type="number" id="itemPrice" placeholder="1000">
+
+            <div style="display: flex; gap: 8px;" id="priceAndUnitGroup">
+                <div class="form-group" style="flex: 2;">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="itemPrice" placeholder="1000">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Ед. изм.</label>
+                    <select id="itemUnit">
+                        <option value="м²">м²</option>
+                        <option value="пог. м">пог. м</option>
+                        <option value="шт.">шт.</option>
+                        <option value="компл.">компл.</option>
+                    </select>
+                </div>
             </div>
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
+
+            <div class="form-group" id="excludeGroup">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="itemExclude">
+                    <span>Исключить из расчета 1 м² (например: штроба, плинтус, двери)</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
                 <button type="button" class="btn btn-success" onclick="saveNewItem()" style="flex: 1;">Сохранить</button>
                 <button type="button" class="btn btn-danger" onclick="hideAddForm()" style="flex: 1;">Отмена</button>
             </div>
@@ -183,12 +212,9 @@
         </div>
         <div class="modal-body">
             
-            <!-- Пояснительный блок для заказчика -->
             <div class="info-box">
                 <strong>💡 Важная информация о расчете:</strong>
-                В данном конструкторе суммируются работы, выполняемые строго <b>по площади (м²)</b>. 
-                <br><br>
-                Обратите внимание, что работы по периметру (углоформирующие ленты, защита окон/дверей пленкой, примыкания, откосы) рассчитываются в <b>погонных метрах (пог. м)</b> или <b>штуках (шт.)</b> и добавляются в итоговую смету отдельно при замере.
+                Здесь можно собрать индивидуальный комплекс работ на $1\text{ м}^2$. Позиции, отмеченные как <i>«Только отдельный расчет»</i>, заблокированы, так как они считаются строго поштучно или по метрам периметра на замере.
             </div>
 
             <div class="area-input-card">
@@ -211,7 +237,12 @@
                 <span style="font-weight: 600; color: #0f172a;">Предварительно за всю площадь:</span>
                 <span id="totalBudget" class="calc-total-big">0 ₽</span>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="margin-top: 4px;">🔄 Сбросить выбор</button>
+
+            <div class="action-buttons-group">
+                <button type="button" class="btn btn-primary" onclick="copyCalcResult()" style="flex: 1;">📋 Скопировать расчет</button>
+                <button type="button" class="btn btn-wa" onclick="shareToWhatsApp()" style="flex: 1;">💬 В WhatsApp</button>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="width: 100%;">🔄 Сбросить выбор</button>
         </div>
     </div>
 </div>
@@ -224,7 +255,7 @@
     let isAdmin = false;
     let currentAddType = 'service';
     let openCategoryIdx = null; 
-    let selectedForCalc = new Set(); // Хранит индексы выбранных услуг для расчета 1 м²
+    let selectedForCalc = new Set(); 
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -345,10 +376,16 @@
                     totalMatches++;
                     const card = document.createElement('div');
                     card.className = 'service-card';
+                    const unitStr = item.unit || 'м²';
                     card.innerHTML = `
-                        <div class="service-name">${escapeHtml(item.name)}</div>
+                        <div class="service-name">
+                            ${escapeHtml(item.name)}
+                            ${item.excludeFromSquare ? '<span style="font-size:10px; color:#f43f5e; margin-left:4px;">(изолировано)</span>' : ''}
+                        </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="service-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
+                            <div class="service-price">
+                                ${Number(item.price).toLocaleString('ru-RU')} ₽ <span class="unit-tag-small">/ ${escapeHtml(unitStr)}</span>
+                            </div>
                             ${isAdmin ? `
                                 <div class="admin-actions">
                                     <button class="btn btn-primary btn-sm" onclick="editItem(${idx})">✏️</button>
@@ -394,26 +431,30 @@
         container.innerHTML = '';
 
         const services = cloudData.services || [];
-        let currentCatName = "Общие работы";
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                currentCatName = item.name;
                 const catHeader = document.createElement('div');
                 catHeader.style.cssText = "font-weight: 700; font-size: 13px; color: #4338ca; margin: 12px 0 6px 0;";
-                catHeader.textContent = currentCatName;
+                catHeader.textContent = item.name;
                 container.appendChild(catHeader);
             } else {
+                const unit = item.unit || 'м²';
+                const isExcluded = !!item.excludeFromSquare; // Флаг изоляции
+
                 const row = document.createElement('label');
-                row.className = 'calc-select-item';
-                const isChecked = selectedForCalc.has(idx) ? 'checked' : '';
+                row.className = `calc-select-item ${isExcluded ? 'disabled-item' : ''}`;
+                
+                const isChecked = !isExcluded && selectedForCalc.has(idx) ? 'checked' : '';
+                const isDisabled = isExcluded ? 'disabled' : '';
 
                 row.innerHTML = `
-                    <input type="checkbox" ${isChecked} onchange="toggleCalcItem(${idx})">
+                    <input type="checkbox" ${isChecked} ${isDisabled} onchange="toggleCalcItem(${idx})">
                     <div class="calc-item-info">
-                        <div class="calc-item-name">${escapeHtml(item.name)}</div>
+                        <span class="calc-item-name">${escapeHtml(item.name)}</span>
+                        ${isExcluded ? `<span class="isolated-badge">Только отдельный расчет</span>` : ''}
                     </div>
-                    <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
+                    <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽ <span style="font-size:10px; color:#64748b; font-weight:400;">/ ${escapeHtml(unit)}</span></div>
                 `;
                 container.appendChild(row);
             }
@@ -454,6 +495,64 @@
         document.getElementById('totalBudget').textContent = `${totalBudget.toLocaleString('ru-RU')} ₽`;
     }
 
+    /* Генерация текстового отчета */
+    function generateReportText() {
+        const services = cloudData.services || [];
+        const area = parseFloat(document.getElementById('roomArea').value) || 1;
+        let pricePerMeter = 0;
+        let itemsList = [];
+
+        selectedForCalc.forEach(idx => {
+            const item = services[idx];
+            if (item && !item.isCategory) {
+                const p = Number(item.price) || 0;
+                const unit = item.unit || 'м²';
+                pricePerMeter += p;
+                itemsList.push(`• ${item.name} — ${p.toLocaleString('ru-RU')} ₽/${unit}`);
+            }
+        });
+
+        if (itemsList.length === 0) {
+            return null;
+        }
+
+        const total = pricePerMeter * area;
+
+        return `📋 *СМЕТА РАБОТ НА 1 м²*\n` +
+               `-----------------------------------\n` +
+               `*Состав работ ("пирог"):*\n` + itemsList.join('\n') + `\n\n` +
+               `📐 *Площадь:* ${area} м²\n` +
+               `💵 *Цена за 1 м²:* ${pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
+               `💰 *Предварительный итог:* ${total.toLocaleString('ru-RU')} ₽\n` +
+               `-----------------------------------\n` +
+               `_Примечание: Отдельные работы (плинтусы, штробы, зашивки) рассчитываются дополнительно по факту замера._`;
+    }
+
+    function copyCalcResult() {
+        const text = generateReportText();
+        if (!text) {
+            alert("Выберите хотя бы одну услугу из списка!");
+            return;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("📋 Расчет успешно скопирован в буфер обмена!");
+        }).catch(err => {
+            alert("Ошибка при копировании: " + err);
+        });
+    }
+
+    function shareToWhatsApp() {
+        const text = generateReportText();
+        if (!text) {
+            alert("Выберите хотя бы одну услугу из списка!");
+            return;
+        }
+
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    }
+
     /* Админ функции */
     function showAddModal(type, targetCatIdx = null) {
         currentAddType = type;
@@ -461,22 +560,27 @@
         form.style.display = 'block';
 
         const catSelectGroup = document.getElementById('categorySelectGroup');
-        const priceGroup = document.getElementById('priceGroup');
+        const priceAndUnitGroup = document.getElementById('priceAndUnitGroup');
+        const excludeGroup = document.getElementById('excludeGroup');
         const select = document.getElementById('targetCategorySelect');
 
         document.getElementById('itemName').value = '';
         document.getElementById('itemPrice').value = '';
+        document.getElementById('itemUnit').value = 'м²';
+        document.getElementById('itemExclude').checked = false;
 
         if (type === 'category') {
             document.getElementById('formTitle').textContent = '➕ Добавление новой категории';
             document.getElementById('itemNameLabel').textContent = 'Название категории';
             catSelectGroup.style.display = 'none';
-            priceGroup.style.display = 'none';
+            priceAndUnitGroup.style.display = 'none';
+            excludeGroup.style.display = 'none';
         } else {
             document.getElementById('formTitle').textContent = '➕ Добавление новой услуги';
             document.getElementById('itemNameLabel').textContent = 'Название услуги';
             catSelectGroup.style.display = 'block';
-            priceGroup.style.display = 'block';
+            priceAndUnitGroup.style.display = 'flex';
+            excludeGroup.style.display = 'block';
 
             select.innerHTML = '<option value="-1">Без категории (в самый конец)</option>';
             cloudData.services.forEach((item, idx) => {
@@ -501,10 +605,13 @@
             openCategoryIdx = cloudData.services.length - 1;
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
+            const unit = document.getElementById('itemUnit').value;
+            const excludeFromSquare = document.getElementById('itemExclude').checked;
+
             if (isNaN(price) || price < 0) { alert("Укажите корректную цену!"); return; }
 
             const catIdx = parseInt(document.getElementById('targetCategorySelect').value);
-            const newItem = { name, price };
+            const newItem = { name, price, unit, excludeFromSquare };
 
             if (catIdx === -1) {
                 cloudData.services.push(newItem);
@@ -530,8 +637,14 @@
         const newPrice = prompt("Новая цена (₽):", item.price);
         if (newPrice === null) return;
 
+        const newUnit = prompt("Единица измерения (м², пог. м, шт., компл.):", item.unit || "м²");
+        
+        const excludeConfirm = confirm("Исключить эту услугу из расчета 1 м² (сделать «Только отдельный расчет»)?\n\nНажмите OK — если нужно ЗАБЛОКИРОВАТЬ выбор в 1 м².\nНажмите Отмена — если услугу МОЖНО выбирать в 1 м².");
+
         if (newName.trim() !== '') item.name = newName.trim();
         if (!isNaN(parseFloat(newPrice))) item.price = parseFloat(newPrice);
+        if (newUnit) item.unit = newUnit.trim();
+        item.excludeFromSquare = excludeConfirm;
 
         renderServices();
     }
