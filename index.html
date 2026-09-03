@@ -29,7 +29,35 @@
         .search-box input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px; pointer-events: none; }
 
-        .category-header { background: #f8fafc; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin: 20px 0 10px 0; font-size: 14px; color: #334155; border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        /* Стиль группы и выпадающей категории */
+        .category-group { margin-bottom: 12px; }
+        .category-header { 
+            background: #f8fafc; 
+            font-weight: 700; 
+            padding: 12px 14px; 
+            border-radius: 10px; 
+            margin: 12px 0 8px 0; 
+            font-size: 14px; 
+            color: #334155; 
+            border-left: 4px solid #6366f1; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s, border-color 0.2s;
+            border-top: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .category-header:hover { background: #f1f5f9; }
+        .category-title { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .category-arrow { font-size: 11px; color: #6366f1; transition: transform 0.2s ease; display: inline-block; }
+        .category-count { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 7px; border-radius: 12px; font-weight: 600; }
+
+        .category-group.collapsed .category-arrow { transform: rotate(-90deg); }
+        .category-group.collapsed .category-items { display: none; }
 
         .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: border-color 0.2s; }
         .service-card:hover { border-color: #cbd5e1; }
@@ -76,7 +104,7 @@
 
     <div class="hero">
         <h1>Каталог услуг и стоимость</h1>
-        <p>Актуальные расценки на ремонтные и отделочные работы</p>
+        <p>Нажмите на категорию, чтобы открыть список работ</p>
     </div>
 
     <!-- Режим Администратора -->
@@ -135,6 +163,7 @@
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = false;
     let currentAddType = 'service';
+    let collapsedCategories = new Set(); // Хранит индексы свёрнутых категорий
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -184,6 +213,15 @@
         }
     }
 
+    function toggleCategory(catIdx) {
+        if (collapsedCategories.has(catIdx)) {
+            collapsedCategories.delete(catIdx);
+        } else {
+            collapsedCategories.add(catIdx);
+        }
+        renderServices(document.getElementById('searchInput').value);
+    }
+
     function renderServices(filterQuery = "") {
         const container = document.getElementById('servicesContainer');
         container.innerHTML = '';
@@ -196,29 +234,62 @@
             return;
         }
 
-        let visibleCount = 0;
+        // Группируем услуги по категориям
+        let currentGroupEl = null;
+        let currentItemsEl = null;
+        let totalMatches = 0;
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                if (!query) {
-                    const cat = document.createElement('div');
-                    cat.className = 'category-header';
-                    cat.innerHTML = `
-                        <span>${escapeHtml(item.name)}</span>
-                        ${isAdmin ? `
-                            <div class="admin-actions">
-                                <button class="btn btn-success btn-sm" onclick="showAddModal('service', ${idx})">➕ Услуга</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteItem(${idx})">🗑</button>
-                                <button class="btn btn-sm" style="background:#e2e8f0;" onclick="moveItem(${idx}, -1)">▲</button>
-                                <button class="btn btn-sm" style="background:#e2e8f0;" onclick="moveItem(${idx}, 1)">▼</button>
-                            </div>
-                        ` : ''}
-                    `;
-                    container.appendChild(cat);
+                // Подсчет количества услуг в этой категории
+                let serviceCount = 0;
+                for (let i = idx + 1; i < services.length && !services[i].isCategory; i++) {
+                    if (!query || services[i].name.toLowerCase().includes(query)) {
+                        serviceCount++;
+                    }
                 }
+
+                // Если при поиске в категории нет совпадений — пропускаем заголовок
+                if (query && serviceCount === 0) {
+                    currentGroupEl = null;
+                    return;
+                }
+
+                const isCollapsed = !query && collapsedCategories.has(idx);
+
+                currentGroupEl = document.createElement('div');
+                currentGroupEl.className = `category-group ${isCollapsed ? 'collapsed' : ''}`;
+
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.onclick = () => toggleCategory(idx);
+
+                header.innerHTML = `
+                    <div class="category-title">
+                        <span class="category-arrow">▼</span>
+                        <span>${escapeHtml(item.name)}</span>
+                        <span class="category-count">${serviceCount}</span>
+                    </div>
+                    ${isAdmin ? `
+                        <div class="admin-actions" onclick="event.stopPropagation()">
+                            <button class="btn btn-success btn-sm" onclick="showAddModal('service', ${idx})">➕ Услуга</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteItem(${idx})">🗑</button>
+                            <button class="btn btn-sm" style="background:#e2e8f0;" onclick="moveItem(${idx}, -1)">▲</button>
+                            <button class="btn btn-sm" style="background:#e2e8f0;" onclick="moveItem(${idx}, 1)">▼</button>
+                        </div>
+                    ` : ''}
+                `;
+
+                currentItemsEl = document.createElement('div');
+                currentItemsEl.className = 'category-items';
+
+                currentGroupEl.appendChild(header);
+                currentGroupEl.appendChild(currentItemsEl);
+                container.appendChild(currentGroupEl);
             } else {
+                // Услуга
                 if (!query || item.name.toLowerCase().includes(query)) {
-                    visibleCount++;
+                    totalMatches++;
                     const card = document.createElement('div');
                     card.className = 'service-card';
                     card.innerHTML = `
@@ -235,12 +306,18 @@
                             ` : ''}
                         </div>
                     `;
-                    container.appendChild(card);
+
+                    if (currentItemsEl) {
+                        currentItemsEl.appendChild(card);
+                    } else {
+                        // Если услуга без категории
+                        container.appendChild(card);
+                    }
                 }
             }
         });
 
-        if (query && visibleCount === 0) {
+        if (query && totalMatches === 0) {
             container.innerHTML = '<div class="empty-state">Ничего не найдено по вашему запросу</div>';
         }
     }
@@ -250,7 +327,7 @@
         renderServices(q);
     }
 
-    /* Логика добавления и управления */
+    /* Админ-функции */
     function showAddModal(type, targetCatIdx = null) {
         currentAddType = type;
         const form = document.getElementById('addForm');
@@ -274,7 +351,6 @@
             catSelectGroup.style.display = 'block';
             priceGroup.style.display = 'block';
 
-            // Заполняем выпадающий список категорий
             select.innerHTML = '<option value="-1">Без категории (в самый конец)</option>';
             cloudData.services.forEach((item, idx) => {
                 if (item.isCategory) {
@@ -309,16 +385,15 @@
             const newItem = { name, price };
 
             if (catIdx === -1) {
-                // Если категория не выбрана — кладём в самый конец
                 cloudData.services.push(newItem);
             } else {
-                // Находим конец выбранной категории (перед следующей категорией)
                 let insertIdx = catIdx + 1;
                 while (insertIdx < cloudData.services.length && !cloudData.services[insertIdx].isCategory) {
                     insertIdx++;
                 }
-                // Вставляем услугу в найденную позицию
                 cloudData.services.splice(insertIdx, 0, newItem);
+                // При добавлении распахнем категорию
+                collapsedCategories.delete(catIdx);
             }
         }
 
