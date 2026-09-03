@@ -13,7 +13,12 @@
         h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
         .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
-        .action-main-btn { background: #28a745; margin-bottom: 20px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
+        .action-main-btn { background: #28a745; margin-bottom: 15px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
+        
+        /* Стили для блока с правилом погонных метров */
+        .info-box { background: #eef7ff; border: 1px solid #bce0fd; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; font-size: 13px; color: #004085; line-height: 1.4; }
+        .info-box b { display: block; margin-bottom: 4px; font-size: 14px; color: #0056b3; }
+
         .category-header { background: #e9ecef; font-weight: bold; padding: 12px; border-radius: 6px; margin: 20px 0 10px 0; font-size: 16px; color: #495057; display: flex; justify-content: space-between; align-items: center; }
         .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .service-info { flex: 1; padding-right: 10px; }
@@ -35,10 +40,16 @@
 <body>
 
 <div class="container">
-    <a href="calc.html" class="nav-btn">📐 Кабинет мастера / Калькулятор счёта</a>
+    <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
     <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Скачать прайс-лист в PDF</button>
 
-    <h1>📋 Прайс-лист услуг</h1>
+    <h1>📋 Прайс-лист работ и услуг</h1>
+
+    <!-- Информационный блок с правилом расчёта -->
+    <div class="info-box">
+        <b>💡 Правило расчёта погонных метров:</b>
+        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа.
+    </div>
 
     <!-- Панель управления для администратора -->
     <div id="adminPanel" class="admin-controls">
@@ -171,14 +182,19 @@
         let htmlContent = `
             <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0; text-align:center;">ПРАЙС-ЛИСТ УСЛУГ</h2>
             <p style="text-align:center; font-size: 12px; color: #666;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</p>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            
+            <div style="background-color: #eef7ff; border: 1px solid #bce0fd; padding: 10px; margin: 15px 0; font-size: 12px; color: #004085; line-height: 1.3; border-radius: 4px;">
+                <b>Правило расчёта погонных метров:</b> Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр.
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
         `;
 
         services.forEach(srv => {
             if (srv.isCategory) {
                 htmlContent += `
                     <tr>
-                        <td colspan="2" style="background-color: #e9ecef; font-weight: bold; padding: 10px; border: 1px solid #ddd; font-size: 15px; color: #333;">
+                        <td colspan="2" style="background-color: #e9ecef; font-weight: bold; padding: 10px; border: 1px solid #ddd; font-size: 14px; color: #333;">
                             ${srv.name}
                         </td>
                     </tr>
@@ -186,8 +202,8 @@
             } else {
                 htmlContent += `
                     <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 14px;">${srv.name}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 14px; text-align: right; font-weight: bold; color: #28a745; width: 120px;">${Number(srv.price).toLocaleString('ru-RU')} ₽</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 13px;">${srv.name}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: right; font-weight: bold; color: #28a745; width: 110px;">${Number(srv.price).toLocaleString('ru-RU')} ₽</td>
                     </tr>
                 `;
             }
