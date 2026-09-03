@@ -230,6 +230,7 @@
             return;
         }
 
+        // Поиск конца текущей категории (перед началом следующей или в конец массива)
         let insertIdx = catIdx + 1;
         while (insertIdx < cloudData.services.length && !cloudData.services[insertIdx].isCategory) {
             insertIdx++;
