@@ -63,6 +63,7 @@
     <div id="adminPanel" class="admin-controls">
         <div class="admin-header">
             <h3>⚙️ Режим редактирования (Админ)</h3>
+            <button type="button" class="btn btn-danger btn-sm" onclick="logoutAdmin()">Выйти из админки</button>
         </div>
         <div class="form-group">
             <label>Название новой категории</label>
@@ -137,6 +138,14 @@
         if (isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
         }
+    }
+
+    function logoutAdmin() {
+        localStorage.removeItem('isAdminAuthorized');
+        localStorage.removeItem('currentUser');
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('loginNavBtn').textContent = '🔐 Вход для мастеров (Калькулятор)';
+        renderPriceList();
     }
 
     function renderPriceList() {
