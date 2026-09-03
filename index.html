@@ -48,8 +48,7 @@
         .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
         .service-main { flex: 1; min-width: 200px; }
         .service-name { font-weight: 600; font-size: 14px; color: #0f172a; word-break: break-word; }
-        .service-price { color: #059669; font-weight: 700; font-size: 15px; white-space: nowrap; margin-top: 2px; }
-        .unit-tag-small { font-size: 11px; color: #64748b; font-weight: 500; }
+        .service-price { color: #059669; font-weight: 700; font-size: 16px; white-space: nowrap; margin-top: 2px; }
 
         .admin-panel { background: #f5f3ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
         .admin-title { font-size: 14px; font-weight: 700; color: #4338ca; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
@@ -173,20 +172,9 @@
                 <input type="text" id="itemName" placeholder="Наименование...">
             </div>
 
-            <div style="display: flex; gap: 8px;" id="priceAndUnitGroup">
-                <div class="form-group" style="flex: 2;">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="itemPrice" placeholder="1000">
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Ед. изм.</label>
-                    <select id="itemUnit">
-                        <option value="м²">м²</option>
-                        <option value="пог. м">пог. м</option>
-                        <option value="шт.">шт.</option>
-                        <option value="компл.">компл.</option>
-                    </select>
-                </div>
+            <div class="form-group" id="priceGroup">
+                <label>Цена (₽)</label>
+                <input type="number" id="itemPrice" placeholder="1000">
             </div>
 
             <div class="form-group" id="excludeGroup">
@@ -394,7 +382,6 @@
                     totalMatches++;
                     const card = document.createElement('div');
                     card.className = 'service-card';
-                    const unitStr = item.unit || 'м²';
                     const isIsolated = !!item.excludeFromSquare;
 
                     card.innerHTML = `
@@ -404,7 +391,7 @@
                                 ${isIsolated ? '<span class="isolated-badge">изолировано от м²</span>' : ''}
                             </div>
                             <div class="service-price">
-                                ${Number(item.price).toLocaleString('ru-RU')} ₽ <span class="unit-tag-small">/ ${escapeHtml(unitStr)}</span>
+                                ${Number(item.price).toLocaleString('ru-RU')} ₽
                             </div>
                         </div>
                         ${isAdmin ? `
@@ -466,7 +453,6 @@
                 catHeader.textContent = item.name;
                 container.appendChild(catHeader);
             } else {
-                const unit = item.unit || 'м²';
                 const isExcluded = !!item.excludeFromSquare;
 
                 const row = document.createElement('label');
@@ -481,7 +467,7 @@
                         <span class="calc-item-name">${escapeHtml(item.name)}</span>
                         ${isExcluded ? `<span class="isolated-badge">Только отдельный расчет</span>` : ''}
                     </div>
-                    <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽ <span style="font-size:10px; color:#64748b; font-weight:400;">/ ${escapeHtml(unit)}</span></div>
+                    <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
                 `;
                 container.appendChild(row);
             }
@@ -532,9 +518,8 @@
             const item = services[idx];
             if (item && !item.isCategory) {
                 const p = Number(item.price) || 0;
-                const unit = item.unit || 'м²';
                 pricePerMeter += p;
-                itemsList.push(`• ${item.name} — ${p.toLocaleString('ru-RU')} ₽/${unit}`);
+                itemsList.push(`• ${item.name} — ${p.toLocaleString('ru-RU')} ₽`);
             }
         });
 
@@ -551,7 +536,7 @@
                `💵 *Цена за 1 м²:* ${pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
                `💰 *Предварительный итог:* ${total.toLocaleString('ru-RU')} ₽\n` +
                `-----------------------------------\n` +
-               `_Примечание: Отдельные работы (плинтусы, штробы, зашивки) рассчитываются дополнительно по факту замера._`;
+               `_Примечание: Отдельные работы рассчитываются дополнительно по факту замера._`;
     }
 
     function copyCalcResult() {
@@ -586,26 +571,25 @@
         form.style.display = 'block';
 
         const catSelectGroup = document.getElementById('categorySelectGroup');
-        const priceAndUnitGroup = document.getElementById('priceAndUnitGroup');
+        const priceGroup = document.getElementById('priceGroup');
         const excludeGroup = document.getElementById('excludeGroup');
         const select = document.getElementById('targetCategorySelect');
 
         document.getElementById('itemName').value = '';
         document.getElementById('itemPrice').value = '';
-        document.getElementById('itemUnit').value = 'м²';
         document.getElementById('itemExclude').checked = false;
 
         if (type === 'category') {
             document.getElementById('formTitle').textContent = '➕ Добавление новой категории';
             document.getElementById('itemNameLabel').textContent = 'Название категории';
             catSelectGroup.style.display = 'none';
-            priceAndUnitGroup.style.display = 'none';
+            priceGroup.style.display = 'none';
             excludeGroup.style.display = 'none';
         } else {
             document.getElementById('formTitle').textContent = '➕ Добавление новой услуги';
             document.getElementById('itemNameLabel').textContent = 'Название услуги';
             catSelectGroup.style.display = 'block';
-            priceAndUnitGroup.style.display = 'flex';
+            priceGroup.style.display = 'block';
             excludeGroup.style.display = 'block';
 
             select.innerHTML = '<option value="-1">Без категории (в самый конец)</option>';
@@ -631,13 +615,12 @@
             openCategoryIdx = cloudData.services.length - 1;
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
-            const unit = document.getElementById('itemUnit').value;
             const excludeFromSquare = document.getElementById('itemExclude').checked;
 
             if (isNaN(price) || price < 0) { alert("Укажите корректную цену!"); return; }
 
             const catIdx = parseInt(document.getElementById('targetCategorySelect').value);
-            const newItem = { name, price, unit, excludeFromSquare };
+            const newItem = { name, price, excludeFromSquare };
 
             if (catIdx === -1) {
                 cloudData.services.push(newItem);
@@ -663,11 +646,8 @@
         const newPrice = prompt("Новая цена (₽):", item.price);
         if (newPrice === null) return;
 
-        const newUnit = prompt("Единица измерения (м², пог. м, шт., компл.):", item.unit || "м²");
-
         if (newName.trim() !== '') item.name = newName.trim();
         if (!isNaN(parseFloat(newPrice))) item.price = parseFloat(newPrice);
-        if (newUnit) item.unit = newUnit.trim();
 
         renderServices();
     }
