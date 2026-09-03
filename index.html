@@ -62,24 +62,24 @@
         </div>
     </div>
 
-    <div id="loader" class="loader">⏳ Загрузка прайса...</div>
+    <div id="loader" class="loader">⏳ Загрузка прайса из облака...</div>
     <div id="servicesContainer"></div>
 </div>
 
-<!-- Модальное окно: Добавление/Редактирование Категории -->
+<!-- Модальное окно: Категория -->
 <div id="categoryModal" class="modal-overlay">
     <div class="modal">
         <h3 id="categoryModalTitle">Добавить категорию</h3>
         <input type="hidden" id="editCatIndex">
-        <input type="text" id="catNameInput" placeholder="Название категории (напр. Электрика)">
-        <div style="display:flex; justify-height:flex-end; gap:8px;">
+        <input type="text" id="catNameInput" placeholder="Название категории">
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
             <button type="button" class="btn btn-secondary" style="flex:1;" onclick="closeModal('categoryModal')">Отмена</button>
             <button type="button" class="btn btn-success" style="flex:1;" onclick="saveCategory()">Сохранить</button>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно: Добавление/Редактирование Услуги -->
+<!-- Модальное окно: Услуга -->
 <div id="serviceModal" class="modal-overlay">
     <div class="modal">
         <h3 id="serviceModalTitle">Добавить услугу</h3>
@@ -94,7 +94,7 @@
 </div>
 
 <script>
-    const BIN_ID = "6a98820eda38895dfe310361"; // Идентификатор базы JSONBin
+    const BIN_ID = "6a98820eda38895dfe310361";
     let cloudData = { services: [] };
     let isEditMode = false;
 
@@ -122,14 +122,21 @@
 
     async function loadCloudData() {
         try {
-            // Без использования MASTER_KEY
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`);
             const data = await res.json();
-            if (data.record && Array.isArray(data.record.services)) {
-                cloudData = data.record;
+            
+            // Загружаем ровно то, что лежит в баке
+            if (data.record) {
+                if (Array.isArray(data.record.services)) {
+                    cloudData.services = data.record.services;
+                } else if (Array.isArray(data.record)) {
+                    cloudData.services = data.record;
+                }
             }
         } catch (e) {
-            console.error("Ошибка загрузки прайса:", e);
+            console.error("Ошибка при получении данных:", e);
+            document.getElementById('loader').innerText = "❌ Ошибка загрузки из JSONBin";
+            return;
         } finally {
             document.getElementById('loader').style.display = 'none';
             renderServices();
@@ -138,14 +145,13 @@
 
     async function saveCloudData() {
         try {
-            // Прямое сохранение в облачную базу
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(cloudData)
             });
         } catch (e) {
-            console.error("Ошибка сохранения прайса:", e);
+            console.error("Ошибка сохранения:", e);
         }
     }
 
@@ -162,12 +168,11 @@
         container.innerHTML = '';
 
         if (!cloudData.services || cloudData.services.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">Прайс-лист пуст</div>';
+            container.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">Прайс-лист пуст в базе JSONBin</div>';
             return;
         }
 
         cloudData.services.forEach((srv, idx) => {
-            // Поиск по ключевому слову
             if (query && !srv.isCategory && !srv.name.toLowerCase().includes(query)) {
                 return;
             }
@@ -176,10 +181,10 @@
                 const catEl = document.createElement('div');
                 catEl.className = 'category-card';
                 catEl.innerHTML = `
-                    <span class="category-title">📁 ${escapeHtml(srv.name)}</span>
+                    <span class="category-title">${escapeHtml(srv.name)}</span>
                     ${isEditMode ? `
                         <div class="category-actions">
-                            <button type="button" class="btn btn-warning btn-sm" onclick="openEditCategoryModal(${idx})" title="Редактировать название категории">✏️</button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="openEditCategoryModal(${idx})" title="Переименовать категорию">✏️</button>
                             <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(${idx})" title="Удалить категорию">🗑</button>
                         </div>
                     ` : ''}
@@ -207,7 +212,7 @@
 
     // --- Категории ---
     function openAddCategoryModal() {
-        document.getElementById('categoryModalTitle').textContent = "➕ Добавить новую категорию";
+        document.getElementById('categoryModalTitle').textContent = "➕ Добавить категорию";
         document.getElementById('editCatIndex').value = "";
         document.getElementById('catNameInput').value = "";
         document.getElementById('categoryModal').style.display = 'flex';
@@ -230,10 +235,8 @@
         }
 
         if (editIdx !== "") {
-            // Редактирование существующей категории
             cloudData.services[editIdx].name = name;
         } else {
-            // Добавление новой категории
             cloudData.services.push({ name, isCategory: true });
         }
 
@@ -244,7 +247,7 @@
 
     // --- Услуги ---
     function openAddServiceModal() {
-        document.getElementById('serviceModalTitle').textContent = "➕ Добавить новую услугу";
+        document.getElementById('serviceModalTitle').textContent = "➕ Добавить услугу";
         document.getElementById('editSrvIndex').value = "";
         document.getElementById('srvNameInput').value = "";
         document.getElementById('srvPriceInput').value = "";
@@ -265,16 +268,14 @@
         const editIdx = document.getElementById('editSrvIndex').value;
 
         if (!name || isNaN(price)) {
-            alert("Укажите наименование и корректную цену!");
+            alert("Укажите наименование и цену!");
             return;
         }
 
         if (editIdx !== "") {
-            // Редактирование существующей услуги
             cloudData.services[editIdx].name = name;
             cloudData.services[editIdx].price = price;
         } else {
-            // Добавление новой услуги
             cloudData.services.push({ name, price, isCategory: false });
         }
 
