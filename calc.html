@@ -92,7 +92,7 @@
         </div>
 
         <div class="action-btns">
-            <button type="button" class="btn btn-success" onclick="triggerChromePrintPDF()">📄 Сохранить в PDF</button>
+            <button type="button" class="btn btn-success" onclick="sendPDF()">📤 Отправить счет (PDF)</button>
             <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
@@ -133,7 +133,6 @@
     let currentUser = null;
     let invoiceCart = [];
 
-    // Безопасное экранирование спецсимволов для защиты от XSS
     function escapeHtml(str) {
         return String(str ?? '')
             .replace(/&/g, "&amp;")
@@ -318,7 +317,8 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    async function triggerChromePrintPDF() {
+    // Отправка счета через системное меню «Поделиться»
+    async function sendPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
             return;
@@ -364,19 +364,59 @@
         element.style.opacity = '1';
         element.style.backgroundColor = '#ffffff';
 
+        const fileName = `Schet_${client || 'zakazchik'}.pdf`;
         const opt = {
             margin:       10,
-            filename:     `Schet_${client || 'zakazchik'}.pdf`,
+            filename:     fileName,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         try {
-            await html2pdf().from(element).set(opt).save();
+            // Создаем Blob объекта в памяти без сохранения на диск
+            const pdfBlob = await html2pdf().from(element).set(opt).output('blob');
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            // Проверяем поддержку Web Share API (системное меню «Поделиться»)
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Счет на оплату',
+                    text: `Счет на оплату услуг для ${client || 'заказчика'}`,
+                    files: [file]
+                });
+            } else {
+                /* 
+                   Если нужно отправлять счет напрямую в конкретный Telegram-чат через Telegram Bot, 
+                   раскомментируйте код ниже и подставьте свои токен и ID чата:
+
+                   const BOT_TOKEN = 'ВАШ_ТОКЕН_БОТА';
+                   const CHAT_ID = 'ВАШ_CHAT_ID';
+                   const formData = new FormData();
+                   formData.append('chat_id', CHAT_ID);
+                   formData.append('document', file);
+                   formData.append('caption', `🧾 Новый счёт для: ${client || 'Без имени'}`);
+
+                   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+                       method: 'POST',
+                       body: formData
+                   });
+                   alert('Счёт успешно отправлен в Telegram!');
+                */
+
+                // Если меню Поделиться не поддерживается браузером (например, старый ПК)
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = fileName;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                alert("Устройство не поддерживает прямую отправку из браузера, файл был скачан.");
+            }
         } catch (err) {
-            console.error("Ошибка генерации PDF:", err);
-            alert("Не удалось сгенерировать PDF-файл.");
+            if (err.name !== 'AbortError') { // Игнорируем ручную отмену пользователем
+                console.error("Ошибка при отправке PDF:", err);
+                alert("Не удалось отправить PDF.");
+            }
         } finally {
             element.style.position = 'fixed';
             element.style.left = '-9999px';
