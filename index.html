@@ -135,9 +135,6 @@
 
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = localStorage.getItem('isAdminAuthorized') === 'true';
-    
-    // Объект для хранения состояния замков (true - заблокировано / вне пирога, false - открыто)
-    let lockedForSquare = {};
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -267,9 +264,10 @@
         }
     }
 
-    function toggleLock(globalIdx) {
-        if (!isAdmin) return; // Обычный пользователь не может переключать замочки
-        lockedForSquare[globalIdx] = !lockedForSquare[globalIdx];
+    function toggleLock(idx) {
+        if (!isAdmin) return; 
+        // Меняем статус прямо в объекте услуги и перерендериваем
+        cloudData.services[idx].isLockedForSquare = !cloudData.services[idx].isLockedForSquare;
         renderCalcCheckboxes();
     }
 
@@ -286,27 +284,26 @@
             return;
         }
 
+        let visibleCount = 0;
+
         workItems.forEach((item) => {
             const globalIdx = services.indexOf(item);
-            const isLocked = lockedForSquare[globalIdx] === true;
+            const isLocked = item.isLockedForSquare === true;
 
             if (isLocked) {
-                // Если заблокировано (вне пирога)
                 if (isAdmin) {
-                    // Админ видит замочек, которым может разблокировать
+                    // Админ видит заблокированную позицию с закрытым замком (чтобы мочь её вернуть)
                     container.innerHTML += `
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; opacity: 0.6;">
                             <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Разблокировать">🔒</button>
                             <span style="flex:1; color:#94a3b8; text-decoration: line-through;">${escapeHtml(item.name)} (вне пирога)</span>
-                            <span style="font-size:11px; color:#d97706; font-weight:600;">Исключено админом</span>
+                            <span style="font-size:11px; color:#d97706; font-weight:600;">Исключено</span>
                         </div>
                     `;
-                } else {
-                    // Обычный пользователь вообще не видит заблокированную позицию или видит её скрытой
-                    // (Здесь полностью скрываем позицию из калькулятора квадрата для клиента, так как она вне пирога)
                 }
+                // Обычный пользователь эту позицию не видит вообще (она исключена из пирога на сервере)
             } else {
-                // Доступная позиция
+                visibleCount++;
                 let lockButtonHtml = '';
                 if (isAdmin) {
                     lockButtonHtml = `<button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Заблокировать (исключить)">🔓</button>`;
@@ -322,6 +319,11 @@
                 `;
             }
         });
+
+        if (visibleCount === 0 && !isAdmin) {
+            container.innerHTML = '<div style="font-size:12px; color:#94a3b8; text-align:center;">Нет доступных для расчета позиций</div>';
+        }
+
         renderSquareCalc();
     }
 
@@ -342,7 +344,7 @@
         checkboxes.forEach(cb => {
             const idx = parseInt(cb.value);
             const item = cloudData.services[idx];
-            if (item && !lockedForSquare[idx]) {
+            if (item && !item.isLockedForSquare) {
                 total += Number(item.price);
                 container.innerHTML += `
                     <div class="calc-item-row">
@@ -360,7 +362,7 @@
         const checkboxes = document.querySelectorAll('.calc-checkbox:checked');
         let validSelected = 0;
         checkboxes.forEach(cb => {
-            if (!lockedForSquare[parseInt(cb.value)]) validSelected++;
+            if (!cloudData.services[parseInt(cb.value)]?.isLockedForSquare) validSelected++;
         });
 
         if (validSelected === 0) {
@@ -378,7 +380,7 @@
         checkboxes.forEach(cb => {
             const idx = parseInt(cb.value);
             const item = cloudData.services[idx];
-            if (item && !lockedForSquare[idx]) {
+            if (item && !item.isLockedForSquare) {
                 total += Number(item.price);
                 rows += `
                     <tr>
@@ -496,7 +498,7 @@
         }
         const unit = prompt("Единица измерения (м², пог. м, шт., компл., час):", "м²") || "м²";
 
-        cloudData.services.push({ name: name.trim(), price, unit: unit.trim(), isCategory: false });
+        cloudData.services.push({ name: name.trim(), price, unit: unit.trim(), isCategory: false, isLockedForSquare: false });
         renderPriceList();
         renderCalcCheckboxes();
     }
