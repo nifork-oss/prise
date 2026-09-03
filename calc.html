@@ -36,12 +36,14 @@
         .btn-success { background: #28a745; color: white; }
         .btn-primary { background: #007bff; color: white; }
         .btn-danger { background: #dc3545; color: white; }
-        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 10px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; }
+        .tab-menu { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 10px 5px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .tab-btn.active { background: #007bff; color: white; }
         .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; position: relative; }
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .profile-box { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
 </head>
@@ -61,15 +63,17 @@
 <div id="appScreen" class="container" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <a href="index.html" class="nav-btn" style="margin:0;">⬅ На прайс</a>
-        <div style="font-size:12px; font-weight:bold; color:#007bff;">Вы вошли как: <span id="userBadge"></span></div>
-        <button type="button" class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Выйти</button>
+        <div style="font-size:12px; font-weight:bold; color:#007bff;">Пользователь: <span id="userBadge"></span></div>
+        <button type="button" class="btn btn-danger btn-sm" onclick="handleLogout()">Выйти</button>
     </div>
 
     <div class="tab-menu">
-        <button type="button" class="tab-btn active" id="tabCalcBtn" onclick="switchTab('calc')">📐 Калькулятор счёта</button>
-        <button type="button" class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📂 История счетов</button>
+        <button type="button" class="tab-btn active" id="tabCalcBtn" onclick="switchTab('calc')">📐 Калькулятор</button>
+        <button type="button" class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📂 История</button>
+        <button type="button" class="tab-btn" id="tabProfileBtn" onclick="switchTab('profile')">👤 Профиль</button>
     </div>
 
+    <!-- Вкладка Калькулятор -->
     <div id="calcTab">
         <h1>📐 Калькулятор счёта</h1>
         <div class="form-group">
@@ -94,14 +98,49 @@
 
         <div class="action-btns">
             <button type="button" class="btn btn-success" onclick="sendPDF()">📤 Отправить счет (PDF)</button>
-            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory(false)">💾 Сохранить в историю (черновик)</button>
+            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory(false)">💾 Сохранить в историю</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
     </div>
 
+    <!-- Вкладка История -->
     <div id="historyTab" style="display: none;">
         <h1>📂 История счетов</h1>
         <div id="historyList">Загрузка истории...</div>
+    </div>
+
+    <!-- Вкладка Профиль -->
+    <div id="profileTab" style="display: none;">
+        <h1>👤 Личный кабинет</h1>
+        <div class="profile-box">
+            <h3>🔑 Настройки аккаунта</h3>
+            <div class="form-group">
+                <label>Ваш логин</label>
+                <input type="text" id="profLogin">
+            </div>
+            <div class="form-group">
+                <label>Новый пароль</label>
+                <input type="text" id="profPass">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="updateProfile()">💾 Сохранить изменения</button>
+        </div>
+
+        <!-- Секция только для Администратора -->
+        <div id="adminUsersSection" class="profile-box" style="display: none; border-color: #ffeeba; background: #fff3cd;">
+            <h3 style="color: #856404;">👥 Управление мастерами (Админ)</h3>
+            <div class="form-group">
+                <label>Логин нового мастера</label>
+                <input type="text" id="newMasterLogin" placeholder="master2">
+            </div>
+            <div class="form-group">
+                <label>Пароль новый</label>
+                <input type="text" id="newMasterPass" placeholder="123456">
+            </div>
+            <button type="button" class="btn btn-success" onclick="addNewUser()">➕ Добавить мастера</button>
+
+            <h4 style="margin-top: 15px; margin-bottom: 5px;">Список мастеров:</h4>
+            <div id="usersListContainer"></div>
+        </div>
     </div>
 </div>
 
@@ -123,7 +162,6 @@
     window.addEventListener('DOMContentLoaded', async () => {
         await loadCloudData();
         
-        // Автоматическое восстановление сессии
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
             currentUser = savedUser;
@@ -207,9 +245,14 @@
     function switchTab(tab) {
         document.getElementById('calcTab').style.display = tab === 'calc' ? 'block' : 'none';
         document.getElementById('historyTab').style.display = tab === 'history' ? 'block' : 'none';
+        document.getElementById('profileTab').style.display = tab === 'profile' ? 'block' : 'none';
+
         document.getElementById('tabCalcBtn').classList.toggle('active', tab === 'calc');
         document.getElementById('tabHistoryBtn').classList.toggle('active', tab === 'history');
+        document.getElementById('tabProfileBtn').classList.toggle('active', tab === 'profile');
+
         if (tab === 'history') renderHistory();
+        if (tab === 'profile') renderProfile();
     }
 
     function renderServices() {
@@ -317,7 +360,6 @@
             return;
         }
 
-        // Автоматическое сохранение счета в историю мастера при отправке
         await saveInvoiceToHistory(true);
 
         const client = document.getElementById('clientName').value.trim();
@@ -446,8 +488,6 @@
         list.innerHTML = '';
 
         let records = cloudData.history || [];
-        
-        // Фильтрация: Админ видит всех, обычный мастер — только свои счета
         if (currentUser !== 'admin') {
             records = records.filter(r => r.author === currentUser);
         }
@@ -480,6 +520,97 @@
         cloudData.history = cloudData.history.filter(r => r.id !== id);
         await saveCloudData();
         renderHistory();
+    }
+
+    function renderProfile() {
+        const userObj = cloudData.users.find(u => u.login === currentUser);
+        if (userObj) {
+            document.getElementById('profLogin').value = userObj.login;
+            document.getElementById('profPass').value = userObj.pass;
+        }
+
+        const adminSection = document.getElementById('adminUsersSection');
+        if (currentUser === 'admin') {
+            adminSection.style.display = 'block';
+            renderUsersList();
+        } else {
+            adminSection.style.display = 'none';
+        }
+    }
+
+    async function updateProfile() {
+        const newL = document.getElementById('profLogin').value.trim();
+        const newP = document.getElementById('profPass').value.trim();
+
+        if (!newL || !newP) {
+            alert('Логин и пароль не могут быть пустыми!');
+            return;
+        }
+
+        if (newL !== currentUser && cloudData.users.some(u => u.login === newL)) {
+            alert('Пользователь с таким логином уже существует!');
+            return;
+        }
+
+        const userObj = cloudData.users.find(u => u.login === currentUser);
+        if (userObj) {
+            userObj.login = newL;
+            userObj.pass = newP;
+        }
+
+        currentUser = newL;
+        localStorage.setItem('currentUser', currentUser);
+        if (currentUser === 'admin') localStorage.setItem('isAdminAuthorized', 'true');
+
+        await saveCloudData();
+        document.getElementById('userBadge').textContent = currentUser;
+        alert('Логин и пароль успешно обновлены!');
+    }
+
+    function renderUsersList() {
+        const list = document.getElementById('usersListContainer');
+        if (!list) return;
+        list.innerHTML = '';
+
+        cloudData.users.forEach((u, idx) => {
+            if (u.login === 'admin') return;
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee; font-size:13px;">
+                    <span>👤 <b>${escapeHtml(u.login)}</b> (пароль: <code>${escapeHtml(u.pass)}</code>)</span>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${idx})">Удалить</button>
+                </div>
+            `;
+        });
+    }
+
+    async function addNewUser() {
+        const l = document.getElementById('newMasterLogin').value.trim();
+        const p = document.getElementById('newMasterPass').value.trim();
+
+        if (!l || !p) {
+            alert('Заполните логин и пароль нового мастера!');
+            return;
+        }
+
+        if (cloudData.users.some(u => u.login === l)) {
+            alert('Пользователь с таким логином уже зарегистрирован!');
+            return;
+        }
+
+        cloudData.users.push({ login: l, pass: p });
+        await saveCloudData();
+        document.getElementById('newMasterLogin').value = '';
+        document.getElementById('newMasterPass').value = '';
+        renderUsersList();
+        alert(`Мастер ${l} успешно добавлен!`);
+    }
+
+    async function deleteUser(idx) {
+        const u = cloudData.users[idx];
+        if (!confirm(`Удалить мастера ${u.login}?`)) return;
+        cloudData.users.splice(idx, 1);
+        await saveCloudData();
+        renderUsersList();
     }
 
     function resetAll() {
