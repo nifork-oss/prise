@@ -104,7 +104,7 @@
                 <input type="text" id="calcObjectName" placeholder="Например: Квартира-студия 40м²">
             </div>
             <div class="form-group">
-                <label>Выберите работы для включения в 1 м² (замочки исключают позицию):</label>
+                <label id="calcLabelTitle">Выберите работы для включения в 1 м²:</label>
                 <div id="calcCheckboxesContainer" style="max-height: 250px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #fff;"></div>
             </div>
         </div>
@@ -119,7 +119,7 @@
             
             <div class="note-box">
                 <b>📌 Примечание к расчёту:</b><br>
-                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м² с помощью переключателей (замочков), так как выполняются индивидуально по факту и оформляются отдельно.
+                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м², так как выполняются индивидуально по факту и оформляются отдельно.
             </div>
         </div>
 
@@ -191,6 +191,9 @@
         if (isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('adminBadge').style.display = 'block';
+            document.getElementById('calcLabelTitle').textContent = "Выберите работы для включения в 1 м² (замочки исключают позицию):";
+        } else {
+            document.getElementById('calcLabelTitle').textContent = "Выберите работы для включения в 1 м²:";
         }
     }
 
@@ -265,6 +268,7 @@
     }
 
     function toggleLock(globalIdx) {
+        if (!isAdmin) return; // Обычный пользователь не может переключать замочки
         lockedForSquare[globalIdx] = !lockedForSquare[globalIdx];
         renderCalcCheckboxes();
     }
@@ -287,17 +291,30 @@
             const isLocked = lockedForSquare[globalIdx] === true;
 
             if (isLocked) {
-                container.innerHTML += `
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; opacity: 0.6;">
-                        <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Разблокировать">🔒</button>
-                        <span style="flex:1; color:#94a3b8; text-decoration: line-through;">${escapeHtml(item.name)} (вне пирога)</span>
-                        <span style="font-size:11px; color:#94a3b8;">Исключено</span>
-                    </div>
-                `;
+                // Если заблокировано (вне пирога)
+                if (isAdmin) {
+                    // Админ видит замочек, которым может разблокировать
+                    container.innerHTML += `
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; opacity: 0.6;">
+                            <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Разблокировать">🔒</button>
+                            <span style="flex:1; color:#94a3b8; text-decoration: line-through;">${escapeHtml(item.name)} (вне пирога)</span>
+                            <span style="font-size:11px; color:#d97706; font-weight:600;">Исключено админом</span>
+                        </div>
+                    `;
+                } else {
+                    // Обычный пользователь вообще не видит заблокированную позицию или видит её скрытой
+                    // (Здесь полностью скрываем позицию из калькулятора квадрата для клиента, так как она вне пирога)
+                }
             } else {
+                // Доступная позиция
+                let lockButtonHtml = '';
+                if (isAdmin) {
+                    lockButtonHtml = `<button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Заблокировать (исключить)">🔓</button>`;
+                }
+
                 container.innerHTML += `
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-                        <button type="button" class="lock-btn" onclick="toggleLock(${globalIdx})" title="Заблокировать (исключить)">🔓</button>
+                        ${lockButtonHtml}
                         <input type="checkbox" class="calc-checkbox" value="${globalIdx}" onchange="renderSquareCalc()" style="width: 16px; height: 16px; accent-color: #4f46e5;">
                         <span style="flex:1; color:#334155;">${escapeHtml(item.name)}</span>
                         <span style="font-weight:600; color:#059669; white-space:nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</span>
@@ -406,7 +423,7 @@
             
             <div style="margin-top: 25px; padding: 12px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 4px; font-size: 11px; color: #555; line-height: 1.5;">
                 <b>📌 Примечание к расчёту:</b><br>
-                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м² с помощью переключателей (замочков), так как выполняются индивидуально по факту и оформляются отдельно.
+                Некоторые специфические виды работ (монтаж конструкций сложной геометрии, скрытые люки, доп. демонтаж) исключены из базового расчёта за 1 м², так как выполняются индивидуально по факту и оформляются отдельно.
             </div>
         `;
 
