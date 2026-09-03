@@ -36,8 +36,10 @@
         
         .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; width: 100%; text-align: center; }
         .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
         .btn-danger { background: #dc3545; color: white; }
-        .btn-sm { padding: 4px 8px; font-size: 11px; width: auto; margin-left: 5px; }
+        .btn-sm { padding: 4px 8px; font-size: 11px; width: auto; }
+        .action-row { display: flex; gap: 5px; align-items: center; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
 </head>
@@ -173,13 +175,23 @@
             if (srv.isCategory) {
                 const cat = document.createElement('div');
                 cat.className = 'category-header';
-                let adminBtns = isAdmin ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">Удалить</button>` : '';
+                let adminBtns = isAdmin ? `
+                    <div class="action-row">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})">✏️ Изменить</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">Удалить</button>
+                    </div>
+                ` : '';
                 cat.innerHTML = `<span>📂 ${escapeHtml(srv.name)}</span>${adminBtns}`;
                 container.appendChild(cat);
             } else {
                 const card = document.createElement('div');
                 card.className = 'service-card';
-                let adminBtns = isAdmin ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">✕</button>` : '';
+                let adminBtns = isAdmin ? `
+                    <div class="action-row">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">✕</button>
+                    </div>
+                ` : '';
                 card.innerHTML = `
                     <div class="service-info">
                         <div class="service-title">${escapeHtml(srv.name)}</div>
@@ -190,6 +202,37 @@
                 container.appendChild(card);
             }
         });
+    }
+
+    async function editServiceItem(idx) {
+        const srv = cloudData.services[idx];
+        if (!srv) return;
+
+        if (srv.isCategory) {
+            const newName = prompt("Введите новое название категории:", srv.name);
+            if (newName !== null && newName.trim() !== "") {
+                srv.name = newName.trim();
+                await saveCloudData();
+                renderPriceList();
+            }
+        } else {
+            const newName = prompt("Изменить название услуги:", srv.name);
+            if (newName === null || newName.trim() === "") return;
+
+            const newPriceStr = prompt("Изменить цену услуги (в ₽):", srv.price);
+            if (newPriceStr === null) return;
+
+            const newPrice = Number(newPriceStr.trim());
+            if (isNaN(newPrice) || newPrice < 0) {
+                alert("Укажите корректную стоимость!");
+                return;
+            }
+
+            srv.name = newName.trim();
+            srv.price = newPrice;
+            await saveCloudData();
+            renderPriceList();
+        }
     }
 
     async function generatePricePDF() {
