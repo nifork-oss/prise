@@ -15,6 +15,14 @@
         
         .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 20px 16px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05); }
         
+        /* Стили для новой шапки сайта */
+        .site-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; gap: 12px; }
+        .site-logo-area { display: flex; align-items: center; gap: 10px; }
+        .site-logo-icon { width: 40px; height: 40px; background: #4f46e5; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 700; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
+        .site-title-block h2 { font-size: 15px; margin: 0; color: #0f172a; font-weight: 700; }
+        .site-title-block p { font-size: 11px; margin: 2px 0 0 0; color: #64748b; }
+        .header-badge { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; color: #475569; text-align: right; }
+
         h1, h2, h3 { color: #0f172a; margin-top: 0; font-weight: 700; letter-spacing: -0.02em; }
         h1 { font-size: 18px; text-align: center; margin-bottom: 16px; }
         h2 { font-size: 15px; margin-top: 20px; margin-bottom: 10px; }
@@ -87,6 +95,21 @@
 <body>
 
 <div class="container">
+    <!-- НОВАЯ ШАПКА САЙТА -->
+    <header class="site-header">
+        <div class="site-logo-area">
+            <div class="site-logo-icon">🛠</div>
+            <div class="site-title-block">
+                <h2>МастерСтрой</h2>
+                <p>Профессиональный ремонт и отделка</p>
+            </div>
+        </div>
+        <div class="header-badge">
+            ⚡ Калькулятор смет
+        </div>
+    </header>
+    <!-- КОНЕЦ ШАПКИ -->
+
     <div class="nav-header">
         <a href="calc.html" class="nav-btn">🛠 Кабинет мастера</a>
         <div id="adminBadge" style="font-size:12px; font-weight:600; color:#d97706; display:none;">⚙️ Режим редактирования</div>
