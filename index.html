@@ -41,7 +41,7 @@
 
 <div class="container">
     <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
-    <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Скачать прайс-лист в PDF</button>
+    <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Отправить прайс-лист в PDF</button>
 
     <h1>📋 Прайс-лист услуг</h1>
 
@@ -166,7 +166,7 @@
         });
     }
 
-    function generatePricePDF() {
+    async function generatePricePDF() {
         const services = cloudData.services || [];
         if (services.length === 0) {
             alert("Прайс-лист пуст!");
@@ -221,7 +221,24 @@
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(element).set(opt).save();
+        try {
+            const worker = html2pdf().from(element).set(opt);
+            const pdfBlob = await worker.outputPdf('blob');
+            const pdfFile = new File([pdfBlob], "Prais_list_uslug.pdf", { type: "application/pdf" });
+
+            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                await navigator.share({
+                    files: [pdfFile],
+                    title: 'Прайс-лист услуг',
+                    text: 'Актуальный прайс-лист на строительные и отделочные работы.'
+                });
+            } else {
+                worker.save();
+            }
+        } catch (error) {
+            console.error("Ошибка при формировании/отправке PDF:", error);
+            html2pdf().from(element).set(opt).save();
+        }
     }
 
     async function addServiceItem() {
