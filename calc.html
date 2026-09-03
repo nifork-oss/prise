@@ -317,7 +317,6 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    // Отправка счета через системное меню «Поделиться»
     async function sendPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -357,6 +356,7 @@
 
         const element = document.getElementById('printArea');
 
+        // Делаем элемент видимым на экране для скриншота
         element.style.position = 'absolute';
         element.style.top = '0';
         element.style.left = '0';
@@ -364,21 +364,23 @@
         element.style.opacity = '1';
         element.style.backgroundColor = '#ffffff';
 
+        // Пауза 150 мс для гарантированной перерисовки DOM браузером
+        await new Promise(resolve => setTimeout(resolve, 150));
+
         const fileName = `Schet_${client || 'zakazchik'}.pdf`;
         const opt = {
             margin:       10,
             filename:     fileName,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         try {
-            // Создаем Blob объекта в памяти без сохранения на диск
-            const pdfBlob = await html2pdf().from(element).set(opt).output('blob');
+            // Вызов правильно скомпилированного метода генерации Blob
+            const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-            // Проверяем поддержку Web Share API (системное меню «Поделиться»)
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     title: 'Счет на оплату',
@@ -386,25 +388,6 @@
                     files: [file]
                 });
             } else {
-                /* 
-                   Если нужно отправлять счет напрямую в конкретный Telegram-чат через Telegram Bot, 
-                   раскомментируйте код ниже и подставьте свои токен и ID чата:
-
-                   const BOT_TOKEN = 'ВАШ_ТОКЕН_БОТА';
-                   const CHAT_ID = 'ВАШ_CHAT_ID';
-                   const formData = new FormData();
-                   formData.append('chat_id', CHAT_ID);
-                   formData.append('document', file);
-                   formData.append('caption', `🧾 Новый счёт для: ${client || 'Без имени'}`);
-
-                   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
-                       method: 'POST',
-                       body: formData
-                   });
-                   alert('Счёт успешно отправлен в Telegram!');
-                */
-
-                // Если меню Поделиться не поддерживается браузером (например, старый ПК)
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(pdfBlob);
                 link.download = fileName;
@@ -413,11 +396,12 @@
                 alert("Устройство не поддерживает прямую отправку из браузера, файл был скачан.");
             }
         } catch (err) {
-            if (err.name !== 'AbortError') { // Игнорируем ручную отмену пользователем
+            if (err.name !== 'AbortError') {
                 console.error("Ошибка при отправке PDF:", err);
                 alert("Не удалось отправить PDF.");
             }
         } finally {
+            // Скрываем печатную область обратно
             element.style.position = 'fixed';
             element.style.left = '-9999px';
             element.style.opacity = '0';
