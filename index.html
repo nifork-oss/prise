@@ -152,8 +152,8 @@
         
         <div class="calc-square-box">
             <div class="form-group">
-                <label>Название объекта / Помещения</label>
-                <input type="text" id="calcObjectName" placeholder="Например: Квартира-студия 40м²">
+                <label>Название объекта / Помещения *</label>
+                <input type="text" id="calcObjectName" placeholder="Например: Квартира-студия 40м²" required>
             </div>
 
             <div class="form-group">
@@ -650,6 +650,16 @@
     }
 
     async function generateSquarePDF() {
+        const objectNameInput = document.getElementById('calcObjectName');
+        const objectName = objectNameInput ? objectNameInput.value.trim() : "";
+
+        // Проверка: название объекта обязательно для заполнения
+        if (!objectName) {
+            alert("Пожалуйста, введите название объекта или помещения!");
+            if (objectNameInput) objectNameInput.focus();
+            return;
+        }
+
         const checkboxes = document.querySelectorAll('.calc-checkbox:checked');
         let validSelected = 0;
         checkboxes.forEach(cb => {
@@ -661,8 +671,6 @@
             return;
         }
 
-        const objectNameInput = document.getElementById('calcObjectName');
-        const objectName = objectNameInput ? objectNameInput.value.trim() : "";
         const dateStr = new Date().toLocaleDateString('ru-RU');
 
         let rows = '';
@@ -704,7 +712,7 @@
         printContainer.innerHTML = `
             <h2 style="color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 8px; margin-top:0; font-size: 22px;">РАСЧЕТ СТОИМОСТИ 1 М² («ПИРОГ»)</h2>
             <p style="margin: 6px 0; font-size: 14px;"><b>Дата:</b> ${dateStr}</p>
-            ${objectName ? `<p style="margin: 6px 0; font-size: 14px;"><b>Объект:</b> ${escapeHtml(objectName)}</p>` : ''}
+            <p style="margin: 6px 0; font-size: 14px;"><b>Объект:</b> ${escapeHtml(objectName)}</p>
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
                 <thead>
                     <tr style="background-color: #f8fafc;">
@@ -754,11 +762,11 @@
             }
 
             const pdfBlob = pdf.output('blob');
-            const fileName = `Pirog_${objectName || 'kvadrat'}.pdf`;
+            const fileName = `Pirog_${objectName}.pdf`;
             const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({ title: 'Расчет 1 кв.м', text: `Расчет стоимости 1м² для ${objectName || 'объекта'}`, files: [file] });
+                await navigator.share({ title: 'Расчет 1 кв.м', text: `Расчет стоимости 1м² для ${objectName}`, files: [file] });
             } else {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(pdfBlob);
