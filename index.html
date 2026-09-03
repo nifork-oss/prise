@@ -30,13 +30,13 @@
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px; pointer-events: none; }
 
         /* Стиль группы и выпадающей категории */
-        .category-group { margin-bottom: 12px; }
+        .category-group { margin-bottom: 8px; }
         .category-header { 
             background: #f8fafc; 
             font-weight: 700; 
             padding: 12px 14px; 
             border-radius: 10px; 
-            margin: 12px 0 8px 0; 
+            margin: 8px 0; 
             font-size: 14px; 
             color: #334155; 
             border-left: 4px solid #6366f1; 
@@ -56,6 +56,7 @@
         .category-arrow { font-size: 11px; color: #6366f1; transition: transform 0.2s ease; display: inline-block; }
         .category-count { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 7px; border-radius: 12px; font-weight: 600; }
 
+        /* Состояние закрытой категории */
         .category-group.collapsed .category-arrow { transform: rotate(-90deg); }
         .category-group.collapsed .category-items { display: none; }
 
@@ -104,7 +105,7 @@
 
     <div class="hero">
         <h1>Каталог услуг и стоимость</h1>
-        <p>Нажмите на категорию, чтобы открыть список работ</p>
+        <p>Выберите категорию, чтобы посмотреть список услуг</p>
     </div>
 
     <!-- Режим Администратора -->
@@ -163,7 +164,7 @@
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = false;
     let currentAddType = 'service';
-    let collapsedCategories = new Set(); // Хранит индексы свёрнутых категорий
+    let openCategoryIdx = null; // Индекс единственной открытой категории (null = все закрыты)
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -214,10 +215,12 @@
     }
 
     function toggleCategory(catIdx) {
-        if (collapsedCategories.has(catIdx)) {
-            collapsedCategories.delete(catIdx);
+        // Если кликнули по уже открытой категории — закрываем ее
+        if (openCategoryIdx === catIdx) {
+            openCategoryIdx = null;
         } else {
-            collapsedCategories.add(catIdx);
+            // Иначе открываем новую (предыдущая автоматически закроется)
+            openCategoryIdx = catIdx;
         }
         renderServices(document.getElementById('searchInput').value);
     }
@@ -234,14 +237,13 @@
             return;
         }
 
-        // Группируем услуги по категориям
         let currentGroupEl = null;
         let currentItemsEl = null;
         let totalMatches = 0;
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                // Подсчет количества услуг в этой категории
+                // Подсчет количества услуг в категории
                 let serviceCount = 0;
                 for (let i = idx + 1; i < services.length && !services[i].isCategory; i++) {
                     if (!query || services[i].name.toLowerCase().includes(query)) {
@@ -249,13 +251,13 @@
                     }
                 }
 
-                // Если при поиске в категории нет совпадений — пропускаем заголовок
                 if (query && serviceCount === 0) {
                     currentGroupEl = null;
                     return;
                 }
 
-                const isCollapsed = !query && collapsedCategories.has(idx);
+                // Категория открыта только если в поиске есть текст, либо если её индекс совпадает с openCategoryIdx
+                const isCollapsed = !query && (openCategoryIdx !== idx);
 
                 currentGroupEl = document.createElement('div');
                 currentGroupEl.className = `category-group ${isCollapsed ? 'collapsed' : ''}`;
@@ -287,7 +289,6 @@
                 currentGroupEl.appendChild(currentItemsEl);
                 container.appendChild(currentGroupEl);
             } else {
-                // Услуга
                 if (!query || item.name.toLowerCase().includes(query)) {
                     totalMatches++;
                     const card = document.createElement('div');
@@ -310,7 +311,6 @@
                     if (currentItemsEl) {
                         currentItemsEl.appendChild(card);
                     } else {
-                        // Если услуга без категории
                         container.appendChild(card);
                     }
                 }
@@ -374,6 +374,7 @@
 
         if (currentAddType === 'category') {
             cloudData.services.push({ isCategory: true, name });
+            openCategoryIdx = cloudData.services.length - 1; // Раскрываем созданную категорию
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
             if (isNaN(price) || price < 0) {
@@ -392,8 +393,7 @@
                     insertIdx++;
                 }
                 cloudData.services.splice(insertIdx, 0, newItem);
-                // При добавлении распахнем категорию
-                collapsedCategories.delete(catIdx);
+                openCategoryIdx = catIdx; // Раскрываем категорию, куда добавили услугу
             }
         }
 
