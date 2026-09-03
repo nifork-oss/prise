@@ -17,8 +17,10 @@
         .brand { font-size: 18px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
         .brand-badge { background: #4f46e5; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
 
-        .nav-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background: #0f172a; color: #ffffff; padding: 9px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; transition: background 0.2s; border: none; min-height: 40px; }
+        .nav-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background: #0f172a; color: #ffffff; padding: 9px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; transition: background 0.2s; border: none; min-height: 40px; cursor: pointer; }
         .nav-btn:hover { background: #334155; }
+        .nav-btn-calc { background: #4f46e5; }
+        .nav-btn-calc:hover { background: #4338ca; }
 
         .hero { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 20px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(49, 46, 129, 0.12); }
         .hero h1 { font-size: 20px; margin: 0 0 6px 0; font-weight: 700; color: #ffffff; }
@@ -29,49 +31,31 @@
         .search-box input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px; pointer-events: none; }
 
-        /* Стиль группы и выпадающей категории */
+        /* Категории и карточки */
         .category-group { margin-bottom: 8px; }
         .category-header { 
-            background: #f8fafc; 
-            font-weight: 700; 
-            padding: 12px 14px; 
-            border-radius: 10px; 
-            margin: 8px 0; 
-            font-size: 14px; 
-            color: #334155; 
-            border-left: 4px solid #6366f1; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            gap: 8px; 
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s, border-color 0.2s;
-            border-top: 1px solid #f1f5f9;
-            border-right: 1px solid #f1f5f9;
-            border-bottom: 1px solid #f1f5f9;
+            background: #f8fafc; font-weight: 700; padding: 12px 14px; border-radius: 10px; margin: 8px 0; font-size: 14px; color: #334155; 
+            border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+            border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
         }
         .category-header:hover { background: #f1f5f9; }
         .category-title { display: flex; align-items: center; gap: 8px; flex: 1; }
         .category-arrow { font-size: 11px; color: #6366f1; transition: transform 0.2s ease; display: inline-block; }
         .category-count { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 7px; border-radius: 12px; font-weight: 600; }
 
-        /* Состояние закрытой категории */
         .category-group.collapsed .category-arrow { transform: rotate(-90deg); }
         .category-group.collapsed .category-items { display: none; }
 
-        .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: border-color 0.2s; }
-        .service-card:hover { border-color: #cbd5e1; }
+        .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
         .service-name { font-weight: 600; font-size: 14px; color: #0f172a; word-break: break-word; }
         .service-price { color: #059669; font-weight: 700; font-size: 15px; white-space: nowrap; }
 
-        /* Панель администратора */
+        /* Админка */
         .admin-panel { background: #f5f3ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
         .admin-title { font-size: 14px; font-weight: 700; color: #4338ca; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-        
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; background: #fff; -webkit-appearance: none; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; background: #fff; }
 
         .btn { padding: 10px 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-success { background: #10b981; color: white; }
@@ -80,15 +64,50 @@
         .btn-sm { padding: 5px 8px; font-size: 11px; min-height: 30px; border-radius: 6px; }
 
         .admin-actions { display: flex; gap: 4px; align-items: center; }
-
         .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 24px; font-size: 14px; }
         .empty-state { text-align: center; color: #94a3b8; padding: 30px 10px; font-size: 14px; }
+
+        /* Модальное окно конструктора сметы */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: flex-end; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal-container { background: #ffffff; width: 100%; max-width: 680px; max-height: 90vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -10px 25px rgba(0,0,0,0.15); animation: slideUp 0.25s ease-out; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .modal-title { font-size: 16px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .close-btn { background: #e2e8f0; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; }
+
+        .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+
+        /* Информационная плашка про работы вне квадратного метра */
+        .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #1e40af; line-height: 1.5; }
+        .info-box strong { color: #1e3a8a; display: block; margin-bottom: 4px; font-size: 13px; }
+
+        .area-input-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .area-input-card label { font-size: 13px; font-weight: 600; color: #334155; }
+        .area-input-card input { width: 100px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; color: #0f172a; outline: none; }
+
+        .calc-select-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #f1f5f9; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s; }
+        .calc-select-item:hover { background: #f8fafc; }
+        .calc-select-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4f46e5; cursor: pointer; }
+        .calc-item-info { flex: 1; }
+        .calc-item-name { font-size: 13px; font-weight: 600; color: #1e293b; }
+        .calc-item-price { font-size: 13px; font-weight: 700; color: #059669; }
+
+        .modal-footer { padding: 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+        .calc-summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .calc-total-big { font-size: 18px; font-weight: 800; color: #4f46e5; }
 
         @media (min-width: 481px) {
             body { padding: 20px 15px; }
             .container { padding: 28px; }
             .hero h1 { font-size: 22px; }
-            .search-box input, .form-group input, .form-group select { font-size: 14px; }
+            .modal-overlay { align-items: center; padding: 20px; }
+            .modal-container { border-radius: 20px; max-height: 85vh; }
         }
     </style>
 </head>
@@ -100,12 +119,15 @@
             📋 Прайс-лист
             <span class="brand-badge">2026</span>
         </div>
-        <a href="calc.html" class="nav-btn">🔑 Кабинет мастера / Расчет</a>
+        <div style="display: flex; gap: 6px;">
+            <button type="button" class="nav-btn nav-btn-calc" onclick="openCalcModal()">🧮 Расчет 1 м²</button>
+            <a href="calc.html" class="nav-btn">🔑 Кабинет</a>
+        </div>
     </div>
 
     <div class="hero">
         <h1>Каталог услуг и стоимость</h1>
-        <p>Выберите категорию, чтобы посмотреть список услуг</p>
+        <p>Нажмите на категорию или откройте расчёт сметы на 1 м²</p>
     </div>
 
     <!-- Режим Администратора -->
@@ -120,25 +142,20 @@
             <button type="button" class="btn btn-success" onclick="showAddModal('service')" style="flex:1;">➕ Услугу</button>
         </div>
 
-        <!-- Форма добавления -->
         <div id="addForm" style="display: none; background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; margin-bottom: 12px;">
             <h4 id="formTitle" style="margin: 0 0 10px 0; font-size: 13px; color: #0f172a;">Добавление</h4>
-            
             <div class="form-group" id="categorySelectGroup">
                 <label>Выберите категорию</label>
                 <select id="targetCategorySelect"></select>
             </div>
-
             <div class="form-group">
                 <label id="itemNameLabel">Название</label>
                 <input type="text" id="itemName" placeholder="Наименование...">
             </div>
-
             <div class="form-group" id="priceGroup">
                 <label>Цена (₽)</label>
                 <input type="number" id="itemPrice" placeholder="1000">
             </div>
-
             <div style="display: flex; gap: 8px; margin-top: 10px;">
                 <button type="button" class="btn btn-success" onclick="saveNewItem()" style="flex: 1;">Сохранить</button>
                 <button type="button" class="btn btn-danger" onclick="hideAddForm()" style="flex: 1;">Отмена</button>
@@ -157,6 +174,48 @@
     <div id="servicesContainer"></div>
 </div>
 
+<!-- Модальное окно "Конструктор сметы 1 м²" -->
+<div id="calcModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">🧮 Расчет «пирога» работ на 1 м²</h3>
+            <button class="close-btn" onclick="closeCalcModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            
+            <!-- Пояснительный блок для заказчика -->
+            <div class="info-box">
+                <strong>💡 Важная информация о расчете:</strong>
+                В данном конструкторе суммируются работы, выполняемые строго <b>по площади (м²)</b>. 
+                <br><br>
+                Обратите внимание, что работы по периметру (углоформирующие ленты, защита окон/дверей пленкой, примыкания, откосы) рассчитываются в <b>погонных метрах (пог. м)</b> или <b>штуках (шт.)</b> и добавляются в итоговую смету отдельно при замере.
+            </div>
+
+            <div class="area-input-card">
+                <label for="roomArea">Площадь поверхности (м²):</label>
+                <input type="number" id="roomArea" value="1" min="1" oninput="updateCalcTotals()">
+            </div>
+
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">
+                Отметьте необходимые этапы:
+            </div>
+
+            <div id="calcServicesList"></div>
+        </div>
+        <div class="modal-footer">
+            <div class="calc-summary-row">
+                <span style="color: #64748b;">Стоимость за 1 м²:</span>
+                <span id="pricePerMeter" style="font-weight: 700; color: #0f172a;">0 ₽</span>
+            </div>
+            <div class="calc-summary-row">
+                <span style="font-weight: 600; color: #0f172a;">Предварительно за всю площадь:</span>
+                <span id="totalBudget" class="calc-total-big">0 ₽</span>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="margin-top: 4px;">🔄 Сбросить выбор</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
@@ -164,7 +223,8 @@
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = false;
     let currentAddType = 'service';
-    let openCategoryIdx = null; // Индекс единственной открытой категории (null = все закрыты)
+    let openCategoryIdx = null; 
+    let selectedForCalc = new Set(); // Хранит индексы выбранных услуг для расчета 1 м²
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -215,13 +275,7 @@
     }
 
     function toggleCategory(catIdx) {
-        // Если кликнули по уже открытой категории — закрываем ее
-        if (openCategoryIdx === catIdx) {
-            openCategoryIdx = null;
-        } else {
-            // Иначе открываем новую (предыдущая автоматически закроется)
-            openCategoryIdx = catIdx;
-        }
+        openCategoryIdx = (openCategoryIdx === catIdx) ? null : catIdx;
         renderServices(document.getElementById('searchInput').value);
     }
 
@@ -243,7 +297,6 @@
 
         services.forEach((item, idx) => {
             if (item.isCategory) {
-                // Подсчет количества услуг в категории
                 let serviceCount = 0;
                 for (let i = idx + 1; i < services.length && !services[i].isCategory; i++) {
                     if (!query || services[i].name.toLowerCase().includes(query)) {
@@ -256,7 +309,6 @@
                     return;
                 }
 
-                // Категория открыта только если в поиске есть текст, либо если её индекс совпадает с openCategoryIdx
                 const isCollapsed = !query && (openCategoryIdx !== idx);
 
                 currentGroupEl = document.createElement('div');
@@ -323,11 +375,86 @@
     }
 
     function filterServices() {
-        const q = document.getElementById('searchInput').value;
-        renderServices(q);
+        renderServices(document.getElementById('searchInput').value);
     }
 
-    /* Админ-функции */
+    /* Логика конструктора сметы (Калькулятор 1 м²) */
+    function openCalcModal() {
+        renderCalcList();
+        updateCalcTotals();
+        document.getElementById('calcModal').classList.add('active');
+    }
+
+    function closeCalcModal() {
+        document.getElementById('calcModal').classList.remove('active');
+    }
+
+    function renderCalcList() {
+        const container = document.getElementById('calcServicesList');
+        container.innerHTML = '';
+
+        const services = cloudData.services || [];
+        let currentCatName = "Общие работы";
+
+        services.forEach((item, idx) => {
+            if (item.isCategory) {
+                currentCatName = item.name;
+                const catHeader = document.createElement('div');
+                catHeader.style.cssText = "font-weight: 700; font-size: 13px; color: #4338ca; margin: 12px 0 6px 0;";
+                catHeader.textContent = currentCatName;
+                container.appendChild(catHeader);
+            } else {
+                const row = document.createElement('label');
+                row.className = 'calc-select-item';
+                const isChecked = selectedForCalc.has(idx) ? 'checked' : '';
+
+                row.innerHTML = `
+                    <input type="checkbox" ${isChecked} onchange="toggleCalcItem(${idx})">
+                    <div class="calc-item-info">
+                        <div class="calc-item-name">${escapeHtml(item.name)}</div>
+                    </div>
+                    <div class="calc-item-price">${Number(item.price).toLocaleString('ru-RU')} ₽</div>
+                `;
+                container.appendChild(row);
+            }
+        });
+    }
+
+    function toggleCalcItem(idx) {
+        if (selectedForCalc.has(idx)) {
+            selectedForCalc.delete(idx);
+        } else {
+            selectedForCalc.add(idx);
+        }
+        updateCalcTotals();
+    }
+
+    function clearCalcSelections() {
+        selectedForCalc.clear();
+        renderCalcList();
+        updateCalcTotals();
+    }
+
+    function updateCalcTotals() {
+        let pricePerMeter = 0;
+        const services = cloudData.services || [];
+
+        selectedForCalc.forEach(idx => {
+            if (services[idx] && !services[idx].isCategory) {
+                pricePerMeter += Number(services[idx].price) || 0;
+            }
+        });
+
+        let area = parseFloat(document.getElementById('roomArea').value) || 0;
+        if (area < 0) area = 0;
+
+        const totalBudget = pricePerMeter * area;
+
+        document.getElementById('pricePerMeter').textContent = `${pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
+        document.getElementById('totalBudget').textContent = `${totalBudget.toLocaleString('ru-RU')} ₽`;
+    }
+
+    /* Админ функции */
     function showAddModal(type, targetCatIdx = null) {
         currentAddType = type;
         const form = document.getElementById('addForm');
@@ -367,20 +494,14 @@
 
     function saveNewItem() {
         const name = document.getElementById('itemName').value.trim();
-        if (!name) {
-            alert("Введите название!");
-            return;
-        }
+        if (!name) { alert("Введите название!"); return; }
 
         if (currentAddType === 'category') {
             cloudData.services.push({ isCategory: true, name });
-            openCategoryIdx = cloudData.services.length - 1; // Раскрываем созданную категорию
+            openCategoryIdx = cloudData.services.length - 1;
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
-            if (isNaN(price) || price < 0) {
-                alert("Укажите корректную цену!");
-                return;
-            }
+            if (isNaN(price) || price < 0) { alert("Укажите корректную цену!"); return; }
 
             const catIdx = parseInt(document.getElementById('targetCategorySelect').value);
             const newItem = { name, price };
@@ -393,7 +514,7 @@
                     insertIdx++;
                 }
                 cloudData.services.splice(insertIdx, 0, newItem);
-                openCategoryIdx = catIdx; // Раскрываем категорию, куда добавили услугу
+                openCategoryIdx = catIdx;
             }
         }
 
