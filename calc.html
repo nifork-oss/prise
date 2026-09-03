@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера / Калькулятор счёта</title>
-    <!-- Подключаем библиотеку для генерации PDF -->
+    <!-- Библиотека для генерации PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -307,59 +307,62 @@
         let totalSum = currentInvoiceItems.reduce((acc, item) => acc + item.sum, 0);
 
         const element = document.createElement('div');
-        element.style.padding = '20px';
+        element.style.padding = '25px';
         element.style.background = '#ffffff';
         element.style.fontFamily = 'Arial, sans-serif';
         element.style.color = '#333';
+        element.style.width = '700px';
+        element.style.boxSizing = 'border-box';
 
-        let htmlContent = `
-            <h2 style="color: #28a745; border-bottom: 2px solid #28a745; padding-bottom: 8px; margin-top:0; text-align:center;">СЧЁТ НА ОПЛАТУ РАБОТ</h2>
-            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 15px;">
-                <span><b>Заказчик:</b> ${clientName}</span>
-                <span><b>Дата:</b> ${dateStr}</span>
-            </div>
-
-            <div style="background-color: #f8f9fa; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; font-size: 11px; color: #555; line-height: 1.3; border-radius: 4px;">
-                <b>Правило расчёта погонных метров:</b> Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
-            </div>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                <thead>
-                    <tr style="background-color: #e9ecef;">
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: left;">Услуга</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: center;">Параметры</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: right;">Сумма</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
+        let rowsHtml = '';
         currentInvoiceItems.forEach(item => {
-            htmlContent += `
+            rowsHtml += `
                 <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px;">${item.name}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px; font-size: 11px; text-align: center; color: #555;">${item.details}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; text-align: right; font-weight: bold; color: #28a745;">${item.sum.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 13px;">${item.name}</td>
+                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 12px; text-align: center; color: #555;">${item.details}</td>
+                    <td style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: right; font-weight: bold; color: #28a745; white-space: nowrap;">${item.sum.toLocaleString('ru-RU')} ₽</td>
                 </tr>
             `;
         });
 
-        htmlContent += `
+        element.innerHTML = `
+            <h2 style="color: #28a745; border-bottom: 2px solid #28a745; padding-bottom: 10px; margin-top: 0; text-align: center;">СЧЁТ НА ОПЛАТУ РАБОТ</h2>
+            
+            <table style="width: 100%; margin-bottom: 20px; font-size: 13px;">
+                <tr>
+                    <td style="text-align: left;"><b>Заказчик:</b> ${clientName}</td>
+                    <td style="text-align: right;"><b>Дата:</b> ${dateStr}</td>
+                </tr>
+            </table>
+
+            <div style="background-color: #f8f9fa; border: 1px solid #ddd; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #555; line-height: 1.4; border-radius: 4px;">
+                <b>Правило расчёта погонных метров:</b> Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #e9ecef;">
+                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: left;">Услуга</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: center;">Параметры</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; font-size: 13px; text-align: right;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
                 </tbody>
             </table>
-            <div style="text-align: right; font-size: 16px; font-weight: bold; color: #004085;">
+
+            <div style="text-align: right; font-size: 18px; font-weight: bold; color: #004085; margin-top: 15px;">
                 Итого к оплате: ${totalSum.toLocaleString('ru-RU')} ₽
             </div>
         `;
-
-        element.innerHTML = htmlContent;
 
         const opt = {
             margin:       10,
             filename:     `Schet_${clientName.replace(/\s+/g, '_')}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', putOnlyUsedFonts: true }
         };
 
         try {
