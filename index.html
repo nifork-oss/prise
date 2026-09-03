@@ -131,6 +131,12 @@
                 <label>Название объекта / Помещения</label>
                 <input type="text" id="calcObjectName" placeholder="Например: Квартира-студия 40м²">
             </div>
+            
+            <!-- Примечание о составе пирога на главной странице -->
+            <div style="margin-bottom: 12px; padding: 10px; background: #f1f5f9; border-left: 4px solid #4f46e5; border-radius: 4px; font-size: 11px; color: #475569; line-height: 1.4;">
+                <b>⚠️ Примечание:</b> Периферийные работы (ленты, укрывка и т.п.) не входят в базовый квадратный метр («пирог») из-за иной системы измерений и тарифицируются отдельно.
+            </div>
+
             <div class="form-group">
                 <label id="calcLabelTitle">Выберите работы для включения в 1 м²:</label>
                 <div id="calcCheckboxesContainer" style="max-height: 350px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #fff;"></div>
@@ -218,7 +224,6 @@
         }
     }
 
-    // Сохранение расчета строго в отдельный массив pirogHistory
     async function saveCalculationToHistory(objectName, totalSum, itemsList) {
         if (!cloudData.pirogHistory) cloudData.pirogHistory = [];
         
