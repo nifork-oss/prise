@@ -13,7 +13,7 @@
         h1, h2, h3 { text-align: center; color: #1a1a1a; margin-top: 0; }
         h1 { font-size: 22px; margin-bottom: 15px; }
         .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; text-align: center; }
-        .auth-container { max-width: 320px; margin: 40px auto; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #ddd; }
+        .auth-container { max-width: 340px; margin: 40px auto; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #ddd; }
         .auth-container input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
@@ -36,6 +36,7 @@
         .btn-success { background: #28a745; color: white; }
         .btn-primary { background: #007bff; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
         .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; }
         .tab-menu { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; overflow-x: auto; }
         .tab-btn { flex: 1; min-width: 80px; padding: 10px 5px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; white-space: nowrap; }
@@ -58,6 +59,9 @@
         <input type="password" id="passInput" placeholder="Пароль">
         <button type="button" class="btn btn-primary" onclick="handleLogin()">Войти</button>
         <div id="authError" style="color:red; font-size:12px; margin-top:10px; display:none;">Неверный логин или пароль</div>
+        
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <button type="button" class="btn btn-warning btn-sm" style="width:100%;" onclick="emergencyResetAdmin()">🔑 Сбросить/Восстановить доступ (admin)</button>
     </div>
 </div>
 
@@ -195,12 +199,11 @@
                 if (!cloudData.users || !Array.isArray(cloudData.users) || cloudData.users.length === 0) {
                     cloudData.users = [{ login: "admin", pass: "12345", role: "admin" }];
                 } else {
-                    // Гарантируем наличие роли у каждого пользователя
-                    cloudData.users.forEach((u, idx) => {
-                        if (!u.role) {
-                            u.role = (idx === 0 || u.login === 'admin') ? 'admin' : 'master';
-                        }
-                    });
+                    // Гарантируем, что есть хотя бы 1 админ
+                    let hasAdmin = cloudData.users.some(u => u.role === 'admin');
+                    if (!hasAdmin) {
+                        cloudData.users[0].role = 'admin';
+                    }
                 }
                 if (!cloudData.history || !Array.isArray(cloudData.history)) cloudData.history = [];
             }
@@ -226,11 +229,12 @@
     }
 
     async function handleLogin() {
-        const l = document.getElementById('loginInput').value.trim();
+        const l = document.getElementById('loginInput').value.trim().toLowerCase();
         const p = document.getElementById('passInput').value.trim();
         await loadCloudData();
 
-        const user = cloudData.users.find(u => u.login === l && u.pass === p);
+        // Сравнение логинов без учета регистра
+        const user = cloudData.users.find(u => u.login.toLowerCase() === l && u.pass === p);
         if (user) {
             currentUser = user.login;
             localStorage.setItem('currentUser', currentUser);
@@ -248,8 +252,30 @@
         }
     }
 
+    // Функция аварийного сброса учетной записи админа
+    async function emergencyResetAdmin() {
+        if (!confirm("Восстановить стандартный аккаунт 'admin' с паролем '12345'?")) return;
+        
+        await loadCloudData();
+        let adminUser = cloudData.users.find(u => u.login.toLowerCase() === 'admin');
+        
+        if (adminUser) {
+            adminUser.pass = "12345";
+            adminUser.role = "admin";
+        } else {
+            cloudData.users.unshift({ login: "admin", pass: "12345", role: "admin" });
+        }
+
+        await saveCloudData();
+        
+        document.getElementById('loginInput').value = "admin";
+        document.getElementById('passInput').value = "12345";
+        alert("✅ Аккаунт восстановлен!\nЛогин: admin\nПароль: 12345\n\nНажмите 'Войти'.");
+    }
+
     function isCurrentAdmin() {
-        const u = cloudData.users.find(x => x.login === currentUser);
+        if (!currentUser) return false;
+        const u = cloudData.users.find(x => x.login.toLowerCase() === currentUser.toLowerCase());
         if (u) return u.role === 'admin';
         return localStorage.getItem('userRole') === 'admin' || localStorage.getItem('isAdminAuthorized') === 'true';
     }
@@ -531,7 +557,7 @@
 
         let records = cloudData.history || [];
         if (!isCurrentAdmin()) {
-            records = records.filter(r => r.author === currentUser);
+            records = records.filter(r => r.author.toLowerCase() === currentUser.toLowerCase());
         }
 
         if (records.length === 0) {
@@ -546,7 +572,7 @@
 
             list.innerHTML += `
                 <div class="history-card">
-                    <button type="button" class="btn-delete-history" style="position:absolute; top:12px; right:12px;" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    <button type="button" class="btn-delete-item" style="position:absolute; top:12px; right:12px;" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
                     <b>📅 ${escapeHtml(rec.date)}</b> ${isCurrentAdmin() ? `(Мастер: <u>${escapeHtml(rec.author)}</u>)` : ''}<br>
                     👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
                     📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
@@ -565,7 +591,7 @@
     }
 
     function renderProfile() {
-        const userObj = cloudData.users.find(u => u.login === currentUser);
+        const userObj = cloudData.users.find(u => u.login.toLowerCase() === currentUser.toLowerCase());
         if (userObj) {
             document.getElementById('profLogin').value = userObj.login;
             document.getElementById('profPass').value = userObj.pass;
@@ -581,31 +607,28 @@
             return;
         }
 
-        if (newL !== currentUser && cloudData.users.some(u => u.login === newL)) {
+        const userObj = cloudData.users.find(u => u.login.toLowerCase() === currentUser.toLowerCase());
+        
+        // Проверка уникальности логина при переименовании
+        if (newL.toLowerCase() !== currentUser.toLowerCase() && cloudData.users.some(u => u.login.toLowerCase() === newL.toLowerCase())) {
             alert('Пользователь с таким логином уже существует!');
             return;
         }
 
-        const userObj = cloudData.users.find(u => u.login === currentUser);
         if (userObj) {
             userObj.login = newL;
             userObj.pass = newP;
-            // Сохраняем статус админа за пользователем!
-            if (!userObj.role) userObj.role = 'admin';
         }
 
         currentUser = newL;
         localStorage.setItem('currentUser', currentUser);
         
-        const currentRole = userObj ? userObj.role : 'master';
+        const currentRole = userObj ? userObj.role : 'admin';
         localStorage.setItem('userRole', currentRole);
-        if (currentRole === 'admin') {
-            localStorage.setItem('isAdminAuthorized', 'true');
-        }
 
         await saveCloudData();
         showAppScreen();
-        alert('Данные профиля успешно обновлены!');
+        alert(`Данные сохранены!\nВаш логин: ${newL}\nВаш пароль: ${newP}`);
     }
 
     function renderUsersList() {
@@ -619,7 +642,7 @@
         }
 
         cloudData.users.forEach((u, idx) => {
-            const isSelf = u.login === currentUser;
+            const isSelf = u.login.toLowerCase() === currentUser.toLowerCase();
             const badgeClass = u.role === 'admin' ? 'badge-admin' : 'badge-master';
             const roleName = u.role === 'admin' ? 'Администратор' : 'Мастер';
 
@@ -646,7 +669,7 @@
             return;
         }
 
-        if (cloudData.users.some(u => u.login === l)) {
+        if (cloudData.users.some(u => u.login.toLowerCase() === l.toLowerCase())) {
             alert('Пользователь с таким логином уже зарегистрирован!');
             return;
         }
@@ -662,7 +685,7 @@
 
     async function deleteUser(idx) {
         const u = cloudData.users[idx];
-        if (u.login === currentUser) {
+        if (u.login.toLowerCase() === currentUser.toLowerCase()) {
             alert('Нельзя удалить собственного пользователя!');
             return;
         }
