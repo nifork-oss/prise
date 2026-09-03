@@ -31,6 +31,7 @@
         .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
         .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
         .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
         .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
         .btn-success { background: #28a745; color: white; }
@@ -520,7 +521,7 @@
 
         let records = cloudData.history || [];
         if (!isCurrentAdmin()) {
-            records = records.filter(r => r.author === currentUser);
+            records = records.filter(r => (r.author || r.master || r.user) === currentUser);
         }
 
         if (records.length === 0) {
@@ -529,18 +530,21 @@
         }
 
         records.forEach((rec) => {
-            let itemsHtml = rec.items.map(i => 
+            const items = rec.items || [];
+            let itemsHtml = items.map(i => 
                 `• ${escapeHtml(i.name)} (${i.qty} ${escapeHtml(i.unit)}) — ${(i.qty * i.price).toLocaleString('ru-RU')} ₽`
             ).join('<br>');
+
+            const masterName = rec.author || rec.master || rec.user || 'Мастер';
 
             list.innerHTML += `
                 <div class="history-card">
                     <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
-                    <b>📅 ${escapeHtml(rec.date)}</b> ${isCurrentAdmin() ? `(Мастер: <u>${escapeHtml(rec.author)}</u>)` : ''}<br>
+                    <b>📅 ${escapeHtml(rec.date)}</b> ${isCurrentAdmin() ? `(Мастер: <u>${escapeHtml(masterName)}</u>)` : ''}<br>
                     👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
                     📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
                     <div style="margin: 6px 0; border-top: 1px dashed #ddd; padding-top: 4px; padding-right: 50px;">${itemsHtml}</div>
-                    <b>Итого: ${Number(rec.total).toLocaleString('ru-RU')} ₽</b>
+                    <b>Итого: ${Number(rec.total || 0).toLocaleString('ru-RU')} ₽</b>
                 </div>
             `;
         });
