@@ -53,7 +53,7 @@
 <div id="authScreen" class="container">
     <a href="index.html" class="nav-btn">⬅ На главную (Прайс-лист)</a>
     <div class="auth-container">
-        <h2>🔐 Вход для мастеров</h2>
+        <h2>🔐 Вход в систему</h2>
         <input type="text" id="loginInput" placeholder="Логин">
         <input type="password" id="passInput" placeholder="Пароль">
         <button type="button" class="btn btn-primary" onclick="handleLogin()">Войти</button>
@@ -72,7 +72,7 @@
         <button type="button" class="tab-btn active" id="tabCalcBtn" onclick="switchTab('calc')">📐 Калькулятор</button>
         <button type="button" class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📂 История</button>
         <button type="button" class="tab-btn" id="tabProfileBtn" onclick="switchTab('profile')">👤 Профиль</button>
-        <button type="button" class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')" style="display: none;">👥 Мастера</button>
+        <button type="button" class="tab-btn" id="tabUsersBtn" onclick="switchTab('users')" style="display: none;">👥 Пользователи</button>
     </div>
 
     <!-- Вкладка Калькулятор -->
@@ -130,7 +130,7 @@
 
     <!-- Вкладка Управления Пользователями (Только для Admin) -->
     <div id="usersTab" style="display: none;">
-        <h1>👥 Управление мастерами</h1>
+        <h1>👥 Управление аккаунтами</h1>
         <div class="profile-box" style="border-color: #bce0fd; background: #eef7ff;">
             <h3 style="color: #0056b3; margin-top:0;">➕ Добавить нового пользователя</h3>
             <div class="form-group">
@@ -192,10 +192,15 @@
             const data = await res.json();
             if (data.record) {
                 cloudData = data.record;
-                if (!cloudData.users || !Array.isArray(cloudData.users)) {
+                if (!cloudData.users || !Array.isArray(cloudData.users) || cloudData.users.length === 0) {
                     cloudData.users = [{ login: "admin", pass: "12345", role: "admin" }];
                 } else {
-                    cloudData.users = cloudData.users.map(u => ({ ...u, role: u.role || (u.login === 'admin' ? 'admin' : 'master') }));
+                    // Гарантируем наличие роли у каждого пользователя
+                    cloudData.users.forEach((u, idx) => {
+                        if (!u.role) {
+                            u.role = (idx === 0 || u.login === 'admin') ? 'admin' : 'master';
+                        }
+                    });
                 }
                 if (!cloudData.history || !Array.isArray(cloudData.history)) cloudData.history = [];
             }
@@ -229,7 +234,9 @@
         if (user) {
             currentUser = user.login;
             localStorage.setItem('currentUser', currentUser);
-            if (user.role === 'admin' || currentUser === 'admin') {
+            localStorage.setItem('userRole', user.role || 'master');
+
+            if (user.role === 'admin') {
                 localStorage.setItem('isAdminAuthorized', 'true');
             } else {
                 localStorage.removeItem('isAdminAuthorized');
@@ -243,15 +250,18 @@
 
     function isCurrentAdmin() {
         const u = cloudData.users.find(x => x.login === currentUser);
-        return currentUser === 'admin' || (u && u.role === 'admin');
+        if (u) return u.role === 'admin';
+        return localStorage.getItem('userRole') === 'admin' || localStorage.getItem('isAdminAuthorized') === 'true';
     }
 
     function showAppScreen() {
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
-        document.getElementById('userBadge').textContent = currentUser;
+        
+        const isAdmin = isCurrentAdmin();
+        document.getElementById('userBadge').textContent = `${currentUser} (${isAdmin ? 'Админ' : 'Мастер'})`;
 
-        if (isCurrentAdmin()) {
+        if (isAdmin) {
             document.getElementById('tabUsersBtn').style.display = 'block';
         } else {
             document.getElementById('tabUsersBtn').style.display = 'none';
@@ -263,6 +273,7 @@
     function handleLogout() {
         currentUser = null;
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('userRole');
         localStorage.removeItem('isAdminAuthorized');
         document.getElementById('authScreen').style.display = 'block';
         document.getElementById('appScreen').style.display = 'none';
@@ -535,7 +546,7 @@
 
             list.innerHTML += `
                 <div class="history-card">
-                    <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    <button type="button" class="btn-delete-history" style="position:absolute; top:12px; right:12px;" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
                     <b>📅 ${escapeHtml(rec.date)}</b> ${isCurrentAdmin() ? `(Мастер: <u>${escapeHtml(rec.author)}</u>)` : ''}<br>
                     👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
                     📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
@@ -579,15 +590,22 @@
         if (userObj) {
             userObj.login = newL;
             userObj.pass = newP;
+            // Сохраняем статус админа за пользователем!
+            if (!userObj.role) userObj.role = 'admin';
         }
 
         currentUser = newL;
         localStorage.setItem('currentUser', currentUser);
-        if (isCurrentAdmin()) localStorage.setItem('isAdminAuthorized', 'true');
+        
+        const currentRole = userObj ? userObj.role : 'master';
+        localStorage.setItem('userRole', currentRole);
+        if (currentRole === 'admin') {
+            localStorage.setItem('isAdminAuthorized', 'true');
+        }
 
         await saveCloudData();
-        document.getElementById('userBadge').textContent = currentUser;
-        alert('Логин и пароль успешно обновлены!');
+        showAppScreen();
+        alert('Данные профиля успешно обновлены!');
     }
 
     function renderUsersList() {
