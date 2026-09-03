@@ -28,7 +28,7 @@
         .service-price { color: #28a745; font-weight: bold; font-size: 16px; white-space: nowrap; }
         
         .admin-controls { display: none; background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .admin-header { margin-bottom: 10px; }
         .admin-controls h3 { margin: 0; font-size: 16px; color: #856404; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; font-weight: 500; }
@@ -63,7 +63,6 @@
     <div id="adminPanel" class="admin-controls">
         <div class="admin-header">
             <h3>⚙️ Режим редактирования (Админ)</h3>
-            <button type="button" class="btn btn-danger btn-sm" onclick="logoutAdmin()">Выйти из админки</button>
         </div>
         <div class="form-group">
             <label>Название услуги или категории</label>
@@ -146,13 +145,6 @@
         } else {
             document.getElementById('adminPanel').style.display = 'none';
         }
-    }
-
-    function logoutAdmin() {
-        localStorage.removeItem('isAdminAuthorized');
-        localStorage.removeItem('currentUser');
-        checkAdminAccess();
-        renderPriceList();
     }
 
     function renderPriceList() {
