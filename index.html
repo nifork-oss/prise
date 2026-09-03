@@ -66,10 +66,14 @@
             <button type="button" class="btn btn-danger btn-sm" onclick="logoutAdmin()">Выйти из админки</button>
         </div>
         <div class="form-group">
-            <label>Название новой категории</label>
+            <label>Название услуги или категории</label>
             <input type="text" id="newName" placeholder="Например: Укладка плитки">
         </div>
-        <button type="button" class="btn btn-success" onclick="addCategoryItem()">➕ Создать новую категорию</button>
+        <div class="form-group">
+            <label>Цена (оставьте пустым, если это категория)</label>
+            <input type="number" id="newPrice" placeholder="Например: 1000">
+        </div>
+        <button type="button" class="btn btn-success" onclick="addServiceItem()">➕ Добавить в прайс</button>
     </div>
 
     <div id="loader" class="loader">⏳ Загрузка прайса из облака...</div>
@@ -133,18 +137,21 @@
 
         if (currentUser) {
             document.getElementById('loginNavBtn').textContent = `📐 Кабинет (${currentUser})`;
+        } else {
+            document.getElementById('loginNavBtn').textContent = '🔐 Вход для мастеров (Калькулятор)';
         }
 
         if (isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
+        } else {
+            document.getElementById('adminPanel').style.display = 'none';
         }
     }
 
     function logoutAdmin() {
         localStorage.removeItem('isAdminAuthorized');
         localStorage.removeItem('currentUser');
-        document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('loginNavBtn').textContent = '🔐 Вход для мастеров (Калькулятор)';
+        checkAdminAccess();
         renderPriceList();
     }
 
@@ -174,7 +181,7 @@
                 let adminBtns = isAdmin ? `
                     <div class="action-row">
                         <button type="button" class="btn btn-success btn-sm" onclick="addServiceToCategory(${idx})" title="Добавить услугу в эту категорию">➕ Услуга</button>
-                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Переименовать категорию">✏️</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Редактировать категорию">✏️</button>
                         <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})" title="Удалить категорию">🗑</button>
                     </div>
                 ` : '';
@@ -185,8 +192,8 @@
                 card.className = 'service-card';
                 let adminBtns = isAdmin ? `
                     <div class="action-row">
-                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})">✏️</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">✕</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Редактировать услугу">✏️</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})" title="Удалить услугу">✕</button>
                     </div>
                 ` : '';
                 card.innerHTML = `
@@ -201,20 +208,31 @@
         });
     }
 
-    async function addCategoryItem() {
+    async function addServiceItem() {
         const name = document.getElementById('newName').value.trim();
+        const priceVal = document.getElementById('newPrice').value.trim();
+
         if (!name) {
-            alert('Введите название категории!');
+            alert('Введите название!');
+            return;
+        }
+
+        const isCategory = priceVal === '';
+        let price = isCategory ? 0 : Number(priceVal);
+
+        if (!isCategory && (isNaN(price) || price < 0)) {
+            alert('Введите корректную стоимость!');
             return;
         }
 
         if (!cloudData.services) cloudData.services = [];
-        cloudData.services.push({ name, price: 0, isCategory: true });
+        cloudData.services.push({ name, price, isCategory });
 
         await saveCloudData();
         document.getElementById('newName').value = '';
+        document.getElementById('newPrice').value = '';
         renderPriceList();
-        alert('Категория добавлена!');
+        alert('Добавлено в прайс!');
     }
 
     async function addServiceToCategory(catIdx) {
@@ -230,7 +248,6 @@
             return;
         }
 
-        // Поиск конца текущей категории (перед началом следующей или в конец массива)
         let insertIdx = catIdx + 1;
         while (insertIdx < cloudData.services.length && !cloudData.services[insertIdx].isCategory) {
             insertIdx++;
