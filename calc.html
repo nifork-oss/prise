@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кабинет мастера и Калькулятор</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,92 +11,97 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #f8fafc; margin: 0; padding: 20px 15px; color: #1e293b; }
+        body { background-color: #f8fafc; margin: 0; padding: 12px 8px; color: #1e293b; }
         
-        .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 28px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.04); }
+        .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 20px 16px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05); }
         
         h1, h2, h3 { color: #0f172a; margin-top: 0; font-weight: 700; letter-spacing: -0.02em; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 20px; }
-        h2 { font-size: 16px; margin-top: 24px; margin-bottom: 12px; }
+        h1 { font-size: 18px; text-align: center; margin-bottom: 16px; }
+        h2 { font-size: 15px; margin-top: 20px; margin-bottom: 10px; }
         
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #f1f5f9; color: #475569; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; transition: all 0.2s ease; border: 1px solid #e2e8f0; }
-        .nav-btn:hover { background: #e2e8f0; color: #0f172a; }
+        .nav-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .nav-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background: #f1f5f9; color: #475569; padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; border: 1px solid #e2e8f0; min-height: 38px; }
 
-        .auth-container { max-width: 340px; margin: 40px auto; text-align: center; background: #ffffff; padding: 30px 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .auth-container input { width: 100%; padding: 12px 14px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; transition: border-color 0.2s; outline: none; }
-        .auth-container input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+        .auth-container { max-width: 100%; margin: 20px auto; text-align: center; background: #ffffff; padding: 20px 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .auth-container input { width: 100%; padding: 12px 14px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; outline: none; }
 
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-        .form-group input, .form-group select { width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #fff; color: #0f172a; transition: all 0.2s; outline: none; }
-        .form-group input:focus, .form-group select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
-
-        .category-header { background: #f8fafc; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin: 20px 0 10px 0; font-size: 14px; color: #334155; border-left: 4px solid #6366f1; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: #fff; color: #0f172a; outline: none; -webkit-appearance: none; }
         
-        .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; transition: all 0.2s; }
-        .service-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .service-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; color: #0f172a; }
-        .service-price { color: #059669; font-weight: 700; white-space: nowrap; font-size: 15px; }
+        .category-header { background: #f8fafc; font-weight: 700; padding: 8px 12px; border-radius: 8px; margin: 16px 0 8px 0; font-size: 13px; color: #334155; border-left: 4px solid #6366f1; }
+        
+        .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+        .service-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; color: #0f172a; }
+        .service-price { color: #059669; font-weight: 700; white-space: nowrap; font-size: 14px; }
 
         .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .unit-row input[type="number"] { width: 110px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
-        .unit-row select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: white; flex: 1; outline: none; }
+        .unit-row input[type="number"] { width: 45%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; }
+        .unit-row select { width: 55%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: white; outline: none; -webkit-appearance: none; }
 
-        .add-to-cart-btn { background: #10b981; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; transition: background 0.2s; }
-        .add-to-cart-btn:hover { background: #059669; }
+        .add-to-cart-btn { background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; min-height: 44px; }
 
-        .total-box { margin-top: 16px; padding: 16px 20px; background: #0f172a; border-radius: 12px; text-align: right; font-size: 18px; font-weight: 700; color: #ffffff; display: flex; justify-content: space-between; align-items: center; }
-        .total-box span { color: #34d399; font-size: 22px; }
+        .total-box { margin-top: 14px; padding: 14px; background: #0f172a; border-radius: 12px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; }
+        .total-box span { color: #34d399; font-size: 18px; font-weight: 700; }
 
-        .invoice-preview { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 18px; border-radius: 12px; margin-top: 20px; }
-        .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
-        .invoice-item-info { display: flex; align-items: center; gap: 10px; flex: 1; color: #334155; }
-        .btn-delete-item { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-        .btn-delete-item:hover { background: #fca5a5; color: #991b1b; }
+        .invoice-preview { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 12px; margin-top: 16px; }
+        .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; gap: 8px; }
+        .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; color: #334155; word-break: break-word; }
+        .btn-delete-item { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
 
-        .btn-delete-history { position: absolute; top: 14px; right: 14px; background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-weight: 600; }
-        .btn-delete-history:hover { background: #fca5a5; color: #991b1b; }
-
-        .action-btns { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { padding: 12px 16px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; transition: all 0.2s; }
+        .action-btns { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
         .btn-success { background: #10b981; color: white; }
-        .btn-success:hover { background: #059669; }
         .btn-primary { background: #4f46e5; color: white; }
-        .btn-primary:hover { background: #4338ca; }
         .btn-danger { background: #f43f5e; color: white; }
-        .btn-danger:hover { background: #e11d48; }
-        .btn-sm { padding: 8px 12px; font-size: 12px; width: auto; border-radius: 8px; }
+        .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; border-radius: 6px; min-height: unset; }
 
-        .tab-menu { display: flex; gap: 4px; margin-bottom: 24px; background: #f1f5f9; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .tab-btn { flex: 1; padding: 9px 12px; background: transparent; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; color: #64748b; transition: all 0.2s ease; white-space: nowrap; }
+        /* Таб-меню с горизонтальной прокруткой для мобилок */
+        .tab-menu { display: flex; gap: 6px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .tab-menu::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 0 0 auto; padding: 8px 12px; background: transparent; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; color: #64748b; white-space: nowrap; }
         .tab-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-        .history-card, .profile-box, .user-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-size: 13px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .user-card { display: flex; justify-content: space-between; align-items: center; }
+        .history-card, .profile-box, .user-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
+        .history-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+        .user-card { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+        .badge { padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; display: inline-block; }
         .badge-admin { background: #fef3c7; color: #d97706; }
         .badge-master { background: #e0f2fe; color: #0369a1; }
-        .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 20px; font-size: 14px; }
+        .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 16px; font-size: 13px; }
+
+        @media (min-width: 481px) {
+            body { padding: 20px 15px; }
+            .container { padding: 28px; }
+            h1 { font-size: 20px; }
+            h2 { font-size: 16px; }
+            .form-group input, .form-group select, .unit-row input, .unit-row select { font-size: 14px; }
+            .tab-btn { flex: 1; }
+        }
     </style>
 </head>
 <body>
 
 <div id="authScreen" class="container">
-    <a href="index.html" class="nav-btn">⬅ На главную (Прайс-лист)</a>
+    <a href="index.html" class="nav-btn">⬅ Прайс-лист</a>
     <div class="auth-container">
         <h2>🔐 Вход для мастеров</h2>
-        <input type="text" id="loginInput" placeholder="Логин">
-        <input type="password" id="passInput" placeholder="Пароль">
+        <div class="form-group">
+            <input type="text" id="loginInput" placeholder="Логин" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <input type="password" id="passInput" placeholder="Пароль" autocomplete="current-password">
+        </div>
         <button type="button" class="btn btn-primary" onclick="handleLogin()">Войти</button>
-        <div id="authError" style="color:#f43f5e; font-size:12px; margin-top:12px; display:none; font-weight: 500;">Неверный логин или пароль</div>
+        <div id="authError" style="color:#f43f5e; font-size:12px; margin-top:10px; display:none; font-weight: 500;">Неверный логин или пароль</div>
     </div>
 </div>
 
 <div id="appScreen" class="container" style="display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="index.html" class="nav-btn" style="margin:0;">⬅ На прайс</a>
-        <div style="font-size:12px; font-weight:600; color:#475569; background: #f8fafc; padding: 6px 12px; border-radius: 20px; border: 1px solid #e2e8f0;">
+    <div class="nav-header">
+        <a href="index.html" class="nav-btn">⬅ Прайс</a>
+        <div style="font-size:12px; font-weight:600; color:#475569; background: #f8fafc; padding: 6px 10px; border-radius: 20px; border: 1px solid #e2e8f0;">
             👤 <span id="userBadge" style="color: #0f172a;"></span>
         </div>
         <button type="button" class="btn btn-danger btn-sm" onclick="handleLogout()">Выйти</button>
@@ -111,33 +116,33 @@
 
     <!-- Вкладка Калькулятор -->
     <div id="calcTab">
-        <h1>📐 Калькулятор счёта</h1>
+        <h1>📐 Расчёт счёта</h1>
         <div class="form-group">
             <label>ФИО Заказчика</label>
-            <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+            <input type="text" id="clientName" placeholder="Иванов И.И.">
         </div>
         <div class="form-group">
             <label>Адрес объекта</label>
-            <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1">
+            <input type="text" id="objectAddress" placeholder="ул. Ленина, д. 1">
         </div>
 
         <h2>🛠 Выберите услуги:</h2>
-        <div id="loader" class="loader">⏳ Загрузка прайса...</div>
+        <div id="loader" class="loader">⏳ Загрузка услуг...</div>
         <div id="servicesList"></div>
 
         <h2>🧾 Предпросмотр счета</h2>
         <div class="invoice-preview">
-            <div id="invoiceInfo" style="margin-bottom: 12px; font-size: 13px; color: #475569; line-height: 1.5;"></div>
+            <div id="invoiceInfo" style="margin-bottom: 10px; font-size: 12px; color: #475569; line-height: 1.4;"></div>
             <div id="invoiceItems"></div>
             <div class="total-box">
-                <span>Итого к оплате:</span>
+                <div>Итого:</div>
                 <div><span id="totalSum">0</span> ₽</div>
             </div>
         </div>
 
         <div class="action-btns">
-            <button type="button" class="btn btn-success" onclick="sendPDF()">📤 Отправить счет (PDF)</button>
-            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory(false)">💾 Сохранить в историю</button>
+            <button type="button" class="btn btn-success" onclick="sendPDF()">📤 Отправить PDF</button>
+            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory(false)">💾 Сохранить</button>
             <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
         </div>
     </div>
@@ -152,7 +157,7 @@
     <div id="profileTab" style="display: none;">
         <h1>👤 Личный кабинет</h1>
         <div class="profile-box">
-            <h3 style="font-size: 15px; margin-bottom: 16px;">🔑 Мои данные</h3>
+            <h3 style="font-size: 14px; margin-bottom: 12px;">🔑 Изменить пароль</h3>
             <div class="form-group">
                 <label>Ваш логин</label>
                 <input type="text" id="profLogin">
@@ -161,17 +166,17 @@
                 <label>Новый пароль</label>
                 <input type="text" id="profPass">
             </div>
-            <button type="button" class="btn btn-primary" onclick="updateProfile()">💾 Сохранить изменения</button>
+            <button type="button" class="btn btn-primary" onclick="updateProfile()">💾 Сохранить</button>
         </div>
     </div>
 
-    <!-- Вкладка Управления Пользователями (Только для Admin) -->
+    <!-- Вкладка Управления Пользователями (Admin) -->
     <div id="usersTab" style="display: none;">
-        <h1>👥 Управление мастерами</h1>
+        <h1>👥 Мастера</h1>
         <div class="profile-box" style="border-color: #c7d2fe; background: #f5f3ff;">
-            <h3 style="color: #4338ca; margin-top:0; font-size: 15px;">➕ Добавить нового пользователя</h3>
+            <h3 style="color: #4338ca; margin-top:0; font-size: 14px;">➕ Новый мастер</h3>
             <div class="form-group">
-                <label>Логин пользователя</label>
+                <label>Логин</label>
                 <input type="text" id="newMasterLogin" placeholder="master_ivan">
             </div>
             <div class="form-group">
@@ -185,11 +190,11 @@
                     <option value="admin">Администратор</option>
                 </select>
             </div>
-            <button type="button" class="btn btn-success" onclick="addNewUser()">➕ Создать аккаунт</button>
+            <button type="button" class="btn btn-success" onclick="addNewUser()">➕ Создать</button>
         </div>
 
-        <h2>📋 Зарегистрированные аккаунты</h2>
-        <div id="usersListContainer">Загрузка пользователей...</div>
+        <h2>📋 Аккаунты</h2>
+        <div id="usersListContainer">Загрузка...</div>
     </div>
 </div>
 
@@ -401,7 +406,7 @@
         updateInvoiceInfo();
 
         if (invoiceCart.length === 0) {
-            container.innerHTML = '<div style="color:#94a3b8; font-size: 13px; text-align:center; padding: 10px 0;">Счёт пока пуст</div>';
+            container.innerHTML = '<div style="color:#94a3b8; font-size: 12px; text-align:center; padding: 10px 0;">Счёт пока пуст</div>';
             document.getElementById('totalSum').textContent = '0';
             return;
         }
@@ -415,7 +420,7 @@
                         <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
                         <span>${escapeHtml(item.name)} (${item.qty} ${escapeHtml(item.unit)})</span>
                     </div>
-                    <div><b>${sum.toLocaleString('ru-RU')} ₽</b></div>
+                    <div style="font-weight: 700; white-space: nowrap;">${sum.toLocaleString('ru-RU')} ₽</div>
                 </div>
             `;
         });
@@ -561,7 +566,7 @@
         }
 
         if (records.length === 0) {
-            list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding: 20px 0;">История счетов пуста</div>';
+            list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding: 20px 0; font-size:13px;">История счетов пуста</div>';
             return;
         }
 
@@ -575,11 +580,14 @@
 
             list.innerHTML += `
                 <div class="history-card">
-                    <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
-                    <b>📅 ${escapeHtml(rec.date)}</b> ${isCurrentAdmin() ? `(Мастер: <u>${escapeHtml(masterName)}</u>)` : ''}<br>
-                    👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
-                    📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
-                    <div style="margin: 8px 0; border-top: 1px dashed #e2e8f0; padding-top: 8px; padding-right: 50px; color: #475569;">${itemsHtml}</div>
+                    <div class="history-card-header">
+                        <div><b>📅 ${escapeHtml(rec.date)}</b></div>
+                        <button type="button" class="btn-delete-item" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    </div>
+                    ${isCurrentAdmin() ? `<div style="font-size:11px; color:#64748b; margin-bottom:4px;">Мастер: <b>${escapeHtml(masterName)}</b></div>` : ''}
+                    <div>👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}</div>
+                    <div>📍 <b>Адрес:</b> ${escapeHtml(rec.address)}</div>
+                    <div style="margin: 8px 0; border-top: 1px dashed #e2e8f0; padding-top: 6px; color: #475569; font-size:12px;">${itemsHtml}</div>
                     <b style="color:#059669; font-size: 14px;">Итого: ${Number(rec.total || 0).toLocaleString('ru-RU')} ₽</b>
                 </div>
             `;
@@ -606,7 +614,7 @@
         const newP = document.getElementById('profPass').value.trim();
 
         if (!newL || !newP) {
-            alert('Логин и пароль не могут быть пустыми!');
+            alert('Заполните логин и пароль!');
             return;
         }
 
@@ -627,7 +635,7 @@
 
         await saveCloudData();
         document.getElementById('userBadge').textContent = currentUser;
-        alert('Логин и пароль успешно обновлены!');
+        alert('Данные обновлены!');
     }
 
     function renderUsersList() {
@@ -636,21 +644,21 @@
         list.innerHTML = '';
 
         if (!cloudData.users || cloudData.users.length === 0) {
-            list.innerHTML = '<div style="color:#94a3b8;">Список пользователей пуст</div>';
+            list.innerHTML = '<div style="color:#94a3b8; font-size:13px;">Список пуст</div>';
             return;
         }
 
         cloudData.users.forEach((u, idx) => {
             const isSelf = u.login === currentUser;
             const badgeClass = u.role === 'admin' ? 'badge-admin' : 'badge-master';
-            const roleName = u.role === 'admin' ? 'Администратор' : 'Мастер';
+            const roleName = u.role === 'admin' ? 'Админ' : 'Мастер';
 
             list.innerHTML += `
                 <div class="user-card">
                     <div>
                         <b>👤 ${escapeHtml(u.login)}</b> 
                         <span class="badge ${badgeClass}">${roleName}</span><br>
-                        <span style="color:#64748b; font-size:12px;">Пароль: <code>${escapeHtml(u.pass)}</code></span>
+                        <span style="color:#64748b; font-size:11px;">Пароль: <code>${escapeHtml(u.pass)}</code></span>
                     </div>
                     ${!isSelf ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${idx})">Удалить</button>` : '<span style="font-size:11px; color:#94a3b8; font-weight:600;">Вы</span>'}
                 </div>
@@ -669,7 +677,7 @@
         }
 
         if (cloudData.users.some(u => u.login === l)) {
-            alert('Пользователь с таким логином уже зарегистрирован!');
+            alert('Такой логин уже занят!');
             return;
         }
 
@@ -679,15 +687,12 @@
         document.getElementById('newMasterLogin').value = '';
         document.getElementById('newMasterPass').value = '';
         renderUsersList();
-        alert(`Пользователь ${l} успешно создан!`);
+        alert(`Пользователь ${l} создан!`);
     }
 
     async function deleteUser(idx) {
         const u = cloudData.users[idx];
-        if (u.login === currentUser) {
-            alert('Нельзя удалить собственного пользователя!');
-            return;
-        }
+        if (u.login === currentUser) return;
         if (!confirm(`Удалить пользователя ${u.login}?`)) return;
 
         cloudData.users.splice(idx, 1);
