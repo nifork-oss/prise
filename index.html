@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Подключаем библиотеку для генерации PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -159,7 +158,6 @@
         <p>Нажмите на категорию или откройте расчёт сметы на 1 м²</p>
     </div>
 
-    <!-- Режим Администратора -->
     <div id="adminPanel" class="admin-panel" style="display: none;">
         <div class="admin-title">
             <span>⚙️ Режим редактирования прайса</span>
@@ -214,7 +212,6 @@
     <div id="servicesContainer"></div>
 </div>
 
-<!-- Модальное окно "Конструктор сметы 1 м²" -->
 <div id="calcModal" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-header">
@@ -259,13 +256,12 @@
     </div>
 </div>
 
-<!-- Скрытый макет для красивой генерации PDF -->
 <div id="pdfTemplate">
     <div style="font-family: 'Inter', Arial, sans-serif; padding: 25px; color: #1e293b; background: #ffffff; max-width: 700px; margin: 0 auto;">
         <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="margin: 0; color: #0f172a; font-size: 20px;">Смета на отделочные работы</h2>
-                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Расчет стоимости комплексного «пирога»</p>
+                <h2 style="margin: 0; color: #0f172a; font-size: 20px;" id="pdfObjTitle">Смета на отделочные работы</h2>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;" id="pdfDateSub">Дата формирования: --.--.----</p>
             </div>
             <div style="text-align: right;">
                 <span style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">ПРАЙС 2026</span>
@@ -285,8 +281,7 @@
                 </tr>
             </thead>
             <tbody id="pdfTableBody">
-                <!-- Заполняется динамически -->
-            </tbody>
+                </tbody>
         </table>
 
         <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -314,9 +309,9 @@
     let cloudData = { services: [], users: [], history: [] };
     let isAdmin = false;
     let currentAddType = 'service';
-    let openCategoryIdx = null; // Главный прайс изначально полностью свернут, если null
+    let openCategoryIdx = null; 
     let selectedForCalc = new Set(); 
-    let calcCollapsedCategories = new Set(); // Хранит состояние свернутых категорий в калькуляторе
+    let calcCollapsedCategories = new Set();
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -342,14 +337,16 @@
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
-            if (data.record && Array.isArray(data.record.services)) {
+            if (data.record) {
                 cloudData = data.record;
+                if (!Array.isArray(cloudData.history)) {
+                    cloudData.history = [];
+                }
             }
         } catch (e) {
             console.error("Ошибка загрузки:", e);
         } finally {
             document.getElementById('loader').style.display = 'none';
-            // По умолчанию ВСЕ категории свернуты (и в главном прайсе, и инициализируем для калькулятора)
             initCollapsedCategories();
             renderServices();
         }
@@ -359,7 +356,7 @@
         if (cloudData && cloudData.services) {
             cloudData.services.forEach((item, idx) => {
                 if (item.isCategory) {
-                    calcCollapsedCategories.add(idx); // Все категории калькулятора по умолчанию свернуты
+                    calcCollapsedCategories.add(idx);
                 }
             });
         }
@@ -429,7 +426,6 @@
                     return;
                 }
 
-                // По умолчанию все свернуты, кроме случая активного поиска
                 const isCollapsed = query ? false : (openCategoryIdx !== idx);
 
                 currentGroupEl = document.createElement('div');
@@ -513,7 +509,6 @@
         renderServices(document.getElementById('searchInput').value);
     }
 
-    /* Логика конструктора сметы (Калькулятор 1 м²) */
     function openCalcModal() {
         renderCalcList();
         updateCalcTotals();
@@ -629,7 +624,7 @@
         document.getElementById('totalBudget').textContent = `${totalBudget.toLocaleString('ru-RU')} ₽`;
     }
 
-    function generateReportText() {
+    function generateReportData() {
         const services = cloudData.services || [];
         const area = parseFloat(document.getElementById('roomArea').value) || 1;
         let pricePerMeter = 0;
@@ -640,7 +635,7 @@
             if (item && !item.isCategory) {
                 const p = Number(item.price) || 0;
                 pricePerMeter += p;
-                itemsList.push(`• ${item.name} — ${p.toLocaleString('ru-RU')} ₽`);
+                itemsList.push({ name: item.name, price: p });
             }
         });
 
@@ -650,14 +645,58 @@
         return { pricePerMeter, total, itemsList, area };
     }
 
-    function downloadPDF() {
-        const data = generateReportText();
+    // Функция сохранения копии у администратора в облако
+    async function saveHistoryToCloud(objectName, reportData) {
+        if (!Array.isArray(cloudData.history)) {
+            cloudData.history = [];
+        }
+
+        const newRecord = {
+            date: new Date().toISOString(),
+            objectName: objectName,
+            area: reportData.area,
+            pricePerMeter: reportData.pricePerMeter,
+            total: reportData.total,
+            items: reportData.itemsList
+        };
+
+        // Сохраняем в историю (оставляем последние 50 расчетов)
+        cloudData.history.unshift(newRecord);
+        if (cloudData.history.length > 50) {
+            cloudData.history.pop();
+        }
+
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
+                body: JSON.stringify(cloudData)
+            });
+        } catch (e) {
+            console.error("Не удалось отправить историю администратору:", e);
+        }
+    }
+
+    async function downloadPDF() {
+        const data = generateReportData();
         if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
 
-        // Заполняем скрытый PDF-шаблон данными
+        // Запрашиваем у заказчика название объекта
+        let objectName = prompt("Введите название объекта / имя заказчика:", "Квартира (Объект №1)");
+        if (objectName === null) return; // Нажали отмену
+        objectName = objectName.trim() || "Без названия";
+
+        // Форматируем текущую дату
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
+                        ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        // Заполняем PDF-шаблон
+        document.getElementById('pdfObjTitle').textContent = `Смета: ${objectName}`;
+        document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
         document.getElementById('pdfAreaVal').textContent = data.area;
         document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
         document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
@@ -665,44 +704,46 @@
         const tbody = document.getElementById('pdfTableBody');
         tbody.innerHTML = '';
         
-        selectedForCalc.forEach(idx => {
-            const item = cloudData.services[idx];
-            if (item && !item.isCategory) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
-                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
-                `;
-                tbody.appendChild(tr);
-            }
+        data.itemsList.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
+            `;
+            tbody.appendChild(tr);
         });
+
+        // Автоматически сохраняем копию у администратора в фоне
+        await saveHistoryToCloud(objectName, data);
 
         const element = document.getElementById('pdfTemplate');
         element.style.display = 'block';
 
+        const safeFileName = objectName.replace(/[^a-zA-Zа-яА-Я0-9-_]/g, '_') + '.pdf';
         const opt = {
             margin:       10,
-            filename:     'Smeta_otdelka.pdf',
+            filename:     safeFileName,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().from(element).set(opt).save().then(() => {
-            element.style.display = 'none'; // Скрываем обратно после генерации
+            element.style.display = 'none';
         });
     }
 
     function shareToWhatsApp() {
-        const data = generateReportText();
+        const data = generateReportData();
         if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
 
+        let itemsText = data.itemsList.map(i => `• ${i.name} — ${i.price.toLocaleString('ru-RU')} ₽`).join('\n');
         let text = `📋 *СМЕТА РАБОТ НА 1 м²*\n` +
                    `-----------------------------------\n` +
-                   `*Состав работ ("пирог"):*\n` + data.itemsList.join('\n') + `\n\n` +
+                   `*Состав работ ("пирог"):*\n` + itemsText + `\n\n` +
                    `📐 *Площадь:* ${data.area} м²\n` +
                    `💵 *Цена за 1 м²:* ${data.pricePerMeter.toLocaleString('ru-RU')} ₽\n` +
                    `💰 *Итоговая стоимость:* ${data.total.toLocaleString('ru-RU')} ₽\n` +
@@ -761,7 +802,7 @@
 
         if (currentAddType === 'category') {
             cloudData.services.push({ isCategory: true, name });
-            calcCollapsedCategories.add(cloudData.services.length - 1); // Новая категория тоже свернута
+            calcCollapsedCategories.add(cloudData.services.length - 1);
             openCategoryIdx = cloudData.services.length - 1;
         } else {
             const price = parseFloat(document.getElementById('itemPrice').value);
