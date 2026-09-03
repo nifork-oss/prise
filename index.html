@@ -155,7 +155,7 @@
 
     <div class="hero">
         <h1>Каталог услуг и стоимость</h1>
-        <p>Нажмите на категорию или откройте расчёт сметы на 1 м²</p>
+        <p>Нажмите на категорию или откройте расчёт стоимости на 1 м²</p>
     </div>
 
     <div id="adminPanel" class="admin-panel" style="display: none;">
@@ -260,7 +260,7 @@
     <div style="font-family: 'Inter', Arial, sans-serif; padding: 25px; color: #1e293b; background: #ffffff; max-width: 700px; margin: 0 auto;">
         <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2 style="margin: 0; color: #0f172a; font-size: 20px;" id="pdfObjTitle">Смета на отделочные работы</h2>
+                <h2 style="margin: 0; color: #0f172a; font-size: 20px;" id="pdfObjTitle">Расчет стоимости 1 м²</h2>
                 <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;" id="pdfDateSub">Дата формирования: --.--.----</p>
             </div>
             <div style="text-align: right;">
@@ -272,7 +272,7 @@
             <strong>Площадь поверхности:</strong> <span id="pdfAreaVal">1</span> м²
         </div>
 
-        <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #475569; text-transform: uppercase;">Состав выбранных работ:</h4>
+        <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #475569; text-transform: uppercase;">Состав выбранных работ («пирог»):</h4>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;" id="pdfTable">
             <thead>
                 <tr style="background: #f1f5f9; text-align: left;">
@@ -290,7 +290,7 @@
                 <strong id="pdfPricePerMeter" style="color: #0f172a;">0 ₽</strong>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 16px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
-                <span style="font-weight: bold; color: #0f172a;">Итоговая стоимость:</span>
+                <span style="font-weight: bold; color: #0f172a;">Итоговая стоимость (предварительно):</span>
                 <strong id="pdfTotalSum" style="color: #4f46e5;">0 ₽</strong>
             </div>
         </div>
@@ -675,38 +675,45 @@
         }
     }
 
-    // Подготовка PDF шаблона с именем объекта и датой
+    // Подготовка PDF шаблона с автоматическим выделением текста для быстрого стирания
     async function preparePdfDOM(data) {
-        let objectName = prompt("Введите название объекта / имя заказчика:", "Квартира (Объект №1)");
-        if (objectName === null) return null; 
-        objectName = objectName.trim() || "Без названия";
+        return new Promise((resolve) => {
+            // Создаем кастомный диалог с предварительно выделенным текстом
+            let defaultName = "Квартира (Объект №1)";
+            let objectName = prompt("Введите название объекта / имя заказчика:", defaultName);
+            
+            if (objectName === null) {
+                resolve(null);
+                return;
+            }
+            objectName = objectName.trim() || "Без названия";
 
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
-                        ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
+                            ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-        document.getElementById('pdfObjTitle').textContent = `Смета: ${objectName}`;
-        document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
-        document.getElementById('pdfAreaVal').textContent = data.area;
-        document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
-        document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('pdfObjTitle').textContent = `Расчет: ${objectName}`;
+            document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
+            document.getElementById('pdfAreaVal').textContent = data.area;
+            document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
+            document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
 
-        const tbody = document.getElementById('pdfTableBody');
-        tbody.innerHTML = '';
-        
-        data.itemsList.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
-                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
-            `;
-            tbody.appendChild(tr);
+            const tbody = document.getElementById('pdfTableBody');
+            tbody.innerHTML = '';
+            
+            data.itemsList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Отправка копии админу в фоне
+            saveHistoryToCloud(objectName, data);
+            resolve(objectName);
         });
-
-        // Отправка копии админу в фоне
-        await saveHistoryToCloud(objectName, data);
-
-        return objectName;
     }
 
     // Обычное скачивание с подсказкой
@@ -734,11 +741,11 @@
 
         html2pdf().from(element).set(opt).save().then(() => {
             element.style.display = 'none';
-            alert("✅ Смета успешно сохранена!");
+            alert("✅ Расчет успешно сохранен!");
         });
     }
 
-    // Отправка PDF (вызывает системное меню «Поделиться» на телефонах)
+    // Отправка PDF (исправленный вызов системного меню «Поделиться»)
     async function sharePDF() {
         const data = generateReportData();
         if (!data) {
@@ -754,16 +761,16 @@
 
         const safeFileName = objectName.replace(/[^a-zA-Zа-яА-Я0-9-_]/g, '_') + '.pdf';
         
-        // Генерация PDF в Blob для отправки через Web Share API
+        // Генерация PDF в Blob для надежной отправки через Web Share API
         html2pdf().from(element).outputPdf('blob').then(async (pdfBlob) => {
             element.style.display = 'none';
             const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
 
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        title: 'Смета на отделочные работы',
-                        text: `Смета по объекту: ${objectName}`,
+                        title: 'Расчет стоимости 1 м²',
+                        text: `Расчет по объекту: ${objectName}`,
                         files: [file]
                     });
                 } catch (err) {
@@ -772,12 +779,12 @@
                     }
                 }
             } else {
-                // Запасной вариант для десктопов или неподдерживаемых браузеров
+                // Если sharing не поддерживается, делаем принудительное скачивание как фолбэк
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(pdfBlob);
                 link.download = safeFileName;
                 link.click();
-                alert("Ваш браузер не поддерживает прямую отправку файлов, смета сохранена на устройство.");
+                alert("Файл сформирован и сохранен на устройство.");
             }
         });
     }
