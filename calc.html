@@ -29,17 +29,27 @@
         .form-group label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: #fff; color: #0f172a; outline: none; -webkit-appearance: none; }
         
-        .category-header { background: #f8fafc; font-weight: 700; padding: 8px 12px; border-radius: 8px; margin: 16px 0 8px 0; font-size: 13px; color: #334155; border-left: 4px solid #6366f1; }
+        /* Стили аккордеона */
+        .accordion-category { margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
+        .accordion-header { background: #f8fafc; font-weight: 700; padding: 12px 14px; font-size: 13px; color: #334155; border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .accordion-header:hover { background: #f1f5f9; }
+        .accordion-content { display: none; padding: 10px; background: #fff; border-top: 1px solid #e2e8f0; }
+        .accordion-category.open .accordion-content { display: block; }
+        .accordion-arrow { transition: transform 0.2s ease; font-size: 12px; color: #64748b; }
+        .accordion-category.open .accordion-arrow { transform: rotate(180deg); }
+
+        .search-box { width: 100%; padding: 12px 14px; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 15px; outline: none; background: #fff; }
         
-        .service-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-        .service-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; color: #0f172a; }
-        .service-price { color: #059669; font-weight: 700; white-space: nowrap; font-size: 14px; }
+        .service-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+        .service-card:last-child { margin-bottom: 0; }
+        .service-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; color: #0f172a; }
+        .service-price { color: #059669; font-weight: 700; white-space: nowrap; font-size: 13px; }
 
-        .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .unit-row input[type="number"] { width: 45%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; }
-        .unit-row select { width: 55%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: white; outline: none; -webkit-appearance: none; }
+        .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .unit-row input[type="number"] { width: 45%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+        .unit-row select { width: 55%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: white; outline: none; -webkit-appearance: none; }
 
-        .add-to-cart-btn { background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; min-height: 44px; }
+        .add-to-cart-btn { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; margin-top: 8px; font-weight: 600; width: 100%; min-height: 38px; }
 
         .total-box { margin-top: 14px; padding: 14px; background: #0f172a; border-radius: 12px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; }
         .total-box span { color: #34d399; font-size: 18px; font-weight: 700; }
@@ -126,6 +136,7 @@
         </div>
 
         <h2>🛠 Выберите услуги:</h2>
+        <input type="text" id="searchCalcInput" class="search-box" placeholder="🔍 Поиск услуги для счета..." oninput="renderServices()">
         <div id="loader" class="loader">⏳ Загрузка услуг...</div>
         <div id="servicesList"></div>
 
@@ -327,36 +338,120 @@
         if (tab === 'users') renderUsersList();
     }
 
+    // Функция переключения аккордеона
+    function toggleAccordion(headerEl) {
+        const categoryBlock = headerEl.closest('.accordion-category');
+        const isOpen = categoryBlock.classList.contains('open');
+
+        const parentContainer = categoryBlock.parentElement;
+        parentContainer.querySelectorAll('.accordion-category').forEach(block => {
+            block.classList.remove('open');
+        });
+
+        if (!isOpen) {
+            categoryBlock.classList.add('open');
+        }
+    }
+
     function renderServices() {
         const container = document.getElementById('servicesList');
         if (!container) return;
         container.innerHTML = '';
+
+        const queryInput = document.getElementById('searchCalcInput');
+        const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
         const services = cloudData.services || [];
+
+        let groups = [];
+        let currentGroup = { category: null, items: [] };
 
         services.forEach((srv, idx) => {
             if (srv.isCategory) {
-                const cat = document.createElement('div');
-                cat.className = 'category-header';
-                cat.textContent = srv.name;
-                container.appendChild(cat);
+                if (currentGroup.category !== null || currentGroup.items.length > 0) {
+                    groups.push(currentGroup);
+                }
+                currentGroup = { category: srv, items: [] };
             } else {
-                const card = document.createElement('div');
-                card.className = 'service-card';
-                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
-                card.innerHTML = `
-                    <div class="service-title">
-                        <span>${escapeHtml(srv.name)}</span>
-                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                    <div class="unit-row">
-                        <input type="number" id="input_qty_${idx}" min="0" step="0.1" value="1" placeholder="Кол-во">
-                        <select id="select_unit_${idx}">${unitsOptions}</select>
-                    </div>
-                    <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
-                `;
-                container.appendChild(card);
+                currentGroup.items.push({ service: srv, globalIdx: idx });
             }
         });
+        if (currentGroup.category !== null || currentGroup.items.length > 0) {
+            groups.push(currentGroup);
+        }
+
+        let hasResults = false;
+
+        groups.forEach(group => {
+            let filteredItems = group.items;
+            let categoryMatches = group.category ? group.category.name.toLowerCase().includes(query) : false;
+
+            if (query) {
+                filteredItems = group.items.filter(item => item.service.name.toLowerCase().includes(query));
+                if (!categoryMatches && filteredItems.length === 0) {
+                    return; 
+                }
+            }
+
+            hasResults = true;
+            const categoryBlock = document.createElement('div');
+            categoryBlock.className = 'accordion-category';
+            if (query) {
+                categoryBlock.classList.add('open'); // Автоматически раскрывать при поиске
+            }
+
+            const catName = group.category ? group.category.name : "Без категории";
+
+            const headerEl = document.createElement('div');
+            headerEl.className = 'accordion-header';
+            headerEl.onclick = () => toggleAccordion(headerEl);
+            headerEl.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                    <span>${escapeHtml(catName)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:11px; color:#64748b; font-weight:normal;">(${filteredItems.length})</span>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+            `;
+            categoryBlock.appendChild(headerEl);
+
+            const contentEl = document.createElement('div');
+            contentEl.className = 'accordion-content';
+
+            if (filteredItems.length === 0) {
+                contentEl.innerHTML = '<div style="font-size:12px; color:#94a3b8; padding:4px;">Нет услуг в этой категории</div>';
+            } else {
+                filteredItems.forEach(item => {
+                    const srv = item.service;
+                    const idx = item.globalIdx;
+
+                    let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+                    
+                    const card = document.createElement('div');
+                    card.className = 'service-card';
+                    card.innerHTML = `
+                        <div class="service-title">
+                            <span>${escapeHtml(srv.name)}</span>
+                            <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
+                        </div>
+                        <div class="unit-row">
+                            <input type="number" id="input_qty_${idx}" min="0" step="0.1" value="1" placeholder="Кол-во">
+                            <select id="select_unit_${idx}">${unitsOptions}</select>
+                        </div>
+                        <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                    `;
+                    contentEl.appendChild(card);
+                });
+            }
+
+            categoryBlock.appendChild(contentEl);
+            container.appendChild(categoryBlock);
+        });
+
+        if (!hasResults && query) {
+            container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Ничего не найдено</div>';
+        }
+
         renderInvoice();
     }
 
@@ -550,7 +645,6 @@
         const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
         let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
 
-        // Использование уникального строкового ID для предотвращения сбоев при удалении
         const uniqueId = 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
 
         const newRecord = {
@@ -613,7 +707,6 @@
     async function deleteHistoryRecord(id) {
         if (!confirm("Удалить этот счёт из истории?")) return;
         
-        // Фильтрация по уникальному id исключает удаление «пачкой» или сбои индексов
         cloudData.history = (cloudData.history || []).filter(r => String(r.id) !== String(id));
         
         await saveCloudData();
@@ -660,7 +753,7 @@
     function renderUsersList() {
         const list = document.getElementById('usersListContainer');
         if (!list) return;
-        list.innerHTML = '';
+        list.innerHTML = `[cite: 3]`;
 
         if (!cloudData.users || cloudData.users.length === 0) {
             list.innerHTML = '<div style="color:#94a3b8; font-size:13px;">Список пуст</div>';
