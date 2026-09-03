@@ -56,6 +56,7 @@
         .btn-danger { background: #f43f5e; color: white; }
         .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; border-radius: 6px; min-height: unset; }
 
+        /* Таб-меню с горизонтальной прокруткой для мобилок */
         .tab-menu { display: flex; gap: 6px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .tab-menu::-webkit-scrollbar { display: none; }
         .tab-btn { flex: 0 0 auto; padding: 8px 12px; background: transparent; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; color: #64748b; white-space: nowrap; }
@@ -550,11 +551,8 @@
         const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
         let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
 
-        // Использование уникального строкового ID для предотвращения сбоев при удалении
-        const uniqueId = 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-
         const newRecord = {
-            id: uniqueId,
+            id: Date.now(),
             author: currentUser || "admin",
             date: new Date().toLocaleString('ru-RU'),
             client,
@@ -592,13 +590,12 @@
             ).join('<br>');
 
             const masterName = rec.author || rec.master || rec.user || 'Мастер';
-            const recordId = rec.id || ('legacy_' + Math.random());
 
             list.innerHTML += `
                 <div class="history-card">
                     <div class="history-card-header">
                         <div><b>📅 ${escapeHtml(rec.date)}</b></div>
-                        <button type="button" class="btn-delete-item" onclick="deleteHistoryRecord('${recordId}')">Удалить</button>
+                        <button type="button" class="btn-delete-item" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
                     </div>
                     ${isCurrentAdmin() ? `<div style="font-size:11px; color:#64748b; margin-bottom:4px;">Мастер: <b>${escapeHtml(masterName)}</b></div>` : ''}
                     <div>👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}</div>
@@ -612,10 +609,7 @@
 
     async function deleteHistoryRecord(id) {
         if (!confirm("Удалить этот счёт из истории?")) return;
-        
-        // Фильтрация по уникальному id исключает удаление «пачкой» или сбои индексов
-        cloudData.history = (cloudData.history || []).filter(r => String(r.id) !== String(id));
-        
+        cloudData.history = cloudData.history.filter(r => r.id !== id);
         await saveCloudData();
         renderHistory();
     }
