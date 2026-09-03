@@ -1,4 +1,9 @@
-<!DOCTYPE html>
+# Let's create an improved index.html with:
+# 1. Reliable input field behavior for mobile devices (using JavaScript selection or click-to-clear or placeholder clearing).
+# 2. Removing the history save action to admin entirely so it doesn't clutter the admin panel/history with calculation reports.
+# Let's write the complete updated code.
+
+html_code = """<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -7,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Подключаем библиотеку для генерации PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -103,7 +109,6 @@
         .area-input-card label { font-size: 13px; font-weight: 600; color: #334155; }
         .area-input-card input { width: 100px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; color: #0f172a; outline: none; }
 
-        /* Стили для категорий внутри калькулятора */
         .calc-category-group { margin-bottom: 8px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #ffffff; }
         .calc-category-header { background: #f8fafc; padding: 10px 12px; font-weight: 700; font-size: 13px; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; border-bottom: 1px solid #f1f5f9; }
         .calc-category-header:hover { background: #f1f5f9; }
@@ -126,6 +131,13 @@
         .calc-total-big { font-size: 18px; font-weight: 800; color: #4f46e5; }
 
         .action-buttons-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+        /* Модальное окно для ввода имени объекта (вместо стандартного prompt на мобилках) */
+        .name-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); padding: 16px; }
+        .name-modal-overlay.active { display: flex; }
+        .name-modal-card { background: #ffffff; width: 100%; max-width: 420px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .name-modal-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+        .name-modal-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; outline: none; margin-bottom: 16px; }
 
         /* Скрытый шаблон для генерации красивого PDF */
         #pdfTemplate { display: none; }
@@ -158,6 +170,7 @@
         <p>Нажмите на категорию или откройте расчёт стоимости на 1 м²</p>
     </div>
 
+    <!-- Режим Администратора -->
     <div id="adminPanel" class="admin-panel" style="display: none;">
         <div class="admin-title">
             <span>⚙️ Режим редактирования прайса</span>
@@ -212,6 +225,7 @@
     <div id="servicesContainer"></div>
 </div>
 
+<!-- Модальное окно калькулятора -->
 <div id="calcModal" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-header">
@@ -248,14 +262,27 @@
             </div>
 
             <div class="action-buttons-group">
-                <button type="button" class="btn btn-primary" onclick="downloadPDF()" style="flex: 1;">📥 Скачать PDF</button>
-                <button type="button" class="btn btn-share" onclick="sharePDF()" style="flex: 1;">📤 Отправить PDF</button>
+                <button type="button" class="btn btn-primary" onclick="requestObjectName('download')" style="flex: 1;">📥 Скачать PDF</button>
+                <button type="button" class="btn btn-share" onclick="requestObjectName('share')" style="flex: 1;">📤 Отправить PDF</button>
             </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="clearCalcSelections()" style="width: 100%;">🔄 Сбросить выбор</button>
         </div>
     </div>
 </div>
 
+<!-- Модальное окно ввода названия объекта (чтобы не использовать prompt) -->
+<div id="nameModal" class="name-modal-overlay">
+    <div class="name-modal-card">
+        <div class="name-modal-title">Введите название объекта</div>
+        <input type="text" id="objectNameInput" class="name-modal-input" value="Квартира (Объект №1)" autocomplete="off">
+        <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-primary" onclick="confirmObjectName()" style="flex:1;">Готово</button>
+            <button type="button" class="btn btn-danger" onclick="closeNameModal()" style="flex:1;">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытый макет для красивой генерации PDF -->
 <div id="pdfTemplate">
     <div style="font-family: 'Inter', Arial, sans-serif; padding: 25px; color: #1e293b; background: #ffffff; max-width: 700px; margin: 0 auto;">
         <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -280,8 +307,7 @@
                     <th style="padding: 8px; border: 1px solid #cbd5e1; width: 110px; text-align: right;">Цена за 1 м²</th>
                 </tr>
             </thead>
-            <tbody id="pdfTableBody">
-                </tbody>
+            <tbody id="pdfTableBody"></tbody>
         </table>
 
         <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -306,12 +332,13 @@
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
 
-    let cloudData = { services: [], users: [], history: [] };
+    let cloudData = { services: [], users: [] }; // Убрали историю совсем
     let isAdmin = false;
     let currentAddType = 'service';
     let openCategoryIdx = null; 
     let selectedForCalc = new Set(); 
     let calcCollapsedCategories = new Set();
+    let pendingActionType = null; // 'download' или 'share'
 
     function escapeHtml(str) {
         return String(str ?? '')
@@ -339,9 +366,6 @@
             const data = await res.json();
             if (data.record) {
                 cloudData = data.record;
-                if (!Array.isArray(cloudData.history)) {
-                    cloudData.history = [];
-                }
             }
         } catch (e) {
             console.error("Ошибка загрузки:", e);
@@ -476,7 +500,7 @@
                         </div>
                         ${isAdmin ? `
                             <div class="admin-actions">
-                                <div class="switch-container" title="${isIsolated ? 'Услуга считается погонными метрами (заблокирована в 1 м²)' : 'Услуга разрешена в расчете 1 м²'}">
+                                <div class="switch-container" title="${isIsolated ? 'Услуга считается погонными метрами' : 'Услуга разрешена в расчете 1 м²'}">
                                     <span class="switch-label">${isIsolated ? '🔒 Пог. м' : '🔓 1 м²'}</span>
                                     <label class="switch">
                                         <input type="checkbox" ${isIsolated ? 'checked' : ''} onchange="toggleSquareIsolation(${idx})">
@@ -645,87 +669,61 @@
         return { pricePerMeter, total, itemsList, area };
     }
 
-    async function saveHistoryToCloud(objectName, reportData) {
-        if (!Array.isArray(cloudData.history)) {
-            cloudData.history = [];
-        }
-
-        const newRecord = {
-            date: new Date().toISOString(),
-            objectName: objectName,
-            area: reportData.area,
-            pricePerMeter: reportData.pricePerMeter,
-            total: reportData.total,
-            items: reportData.itemsList
-        };
-
-        cloudData.history.unshift(newRecord);
-        if (cloudData.history.length > 50) {
-            cloudData.history.pop();
-        }
-
-        try {
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-                body: JSON.stringify(cloudData)
-            });
-        } catch (e) {
-            console.error("Не удалось отправить историю администратору:", e);
-        }
-    }
-
-    // Подготовка PDF шаблона с автоматическим выделением текста для быстрого стирания
-    async function preparePdfDOM(data) {
-        return new Promise((resolve) => {
-            // Создаем кастомный диалог с предварительно выделенным текстом
-            let defaultName = "Квартира (Объект №1)";
-            let objectName = prompt("Введите название объекта / имя заказчика:", defaultName);
-            
-            if (objectName === null) {
-                resolve(null);
-                return;
-            }
-            objectName = objectName.trim() || "Без названия";
-
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
-                            ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-            document.getElementById('pdfObjTitle').textContent = `Расчет: ${objectName}`;
-            document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
-            document.getElementById('pdfAreaVal').textContent = data.area;
-            document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
-            document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
-
-            const tbody = document.getElementById('pdfTableBody');
-            tbody.innerHTML = '';
-            
-            data.itemsList.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
-                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Отправка копии админу в фоне
-            saveHistoryToCloud(objectName, data);
-            resolve(objectName);
-        });
-    }
-
-    // Обычное скачивание с подсказкой
-    async function downloadPDF() {
+    // Вызываем свое собственное модальное окно вместо системного prompt, чтобы ничего не зависало на мобилках
+    function requestObjectName(actionType) {
         const data = generateReportData();
         if (!data) {
             alert("Выберите хотя бы одну услугу из списка!");
             return;
         }
+        pendingActionType = actionType;
+        
+        const nameModal = document.getElementById('nameModal');
+        const input = document.getElementById('objectNameInput');
+        input.value = "Квартира (Объект №1)";
+        nameModal.classList.add('active');
+        
+        // Автоматически выделяем текст внутри поля, чтобы пользователю достаточно было сразу набрать новое название
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 100);
+    }
 
-        const objectName = await preparePdfDOM(data);
-        if (!objectName) return;
+    function closeNameModal() {
+        document.getElementById('nameModal').classList.remove('active');
+        pendingActionType = null;
+    }
+
+    async function confirmObjectName() {
+        const input = document.getElementById('objectNameInput');
+        let objectName = input.value.trim() || "Квартира (Объект №1)";
+        closeNameModal();
+
+        const data = generateReportData();
+        if (!data) return;
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
+                        ' г. в ' + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        document.getElementById('pdfObjTitle').textContent = `Расчет: ${objectName}`;
+        document.getElementById('pdfDateSub').textContent = `Дата формирования: ${dateStr}`;
+        document.getElementById('pdfAreaVal').textContent = data.area;
+        document.getElementById('pdfPricePerMeter').textContent = `${data.pricePerMeter.toLocaleString('ru-RU')} ₽ / м²`;
+        document.getElementById('pdfTotalSum').textContent = `${data.total.toLocaleString('ru-RU')} ₽`;
+
+        const tbody = document.getElementById('pdfTableBody');
+        tbody.innerHTML = '';
+        
+        data.itemsList.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${escapeHtml(item.name)}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">${Number(item.price).toLocaleString('ru-RU')} ₽</td>
+            `;
+            tbody.appendChild(tr);
+        });
 
         const element = document.getElementById('pdfTemplate');
         element.style.display = 'block';
@@ -739,54 +737,37 @@
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(element).set(opt).save().then(() => {
-            element.style.display = 'none';
-            alert("✅ Расчет успешно сохранен!");
-        });
-    }
+        if (pendingActionType === 'download') {
+            html2pdf().from(element).set(opt).save().then(() => {
+                element.style.display = 'none';
+                alert("✅ Расчет успешно сохранен!");
+            });
+        } else if (pendingActionType === 'share') {
+            html2pdf().from(element).outputPdf('blob').then(async (pdfBlob) => {
+                element.style.display = 'none';
+                const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
 
-    // Отправка PDF (исправленный вызов системного меню «Поделиться»)
-    async function sharePDF() {
-        const data = generateReportData();
-        if (!data) {
-            alert("Выберите хотя бы одну услугу из списка!");
-            return;
-        }
-
-        const objectName = await preparePdfDOM(data);
-        if (!objectName) return;
-
-        const element = document.getElementById('pdfTemplate');
-        element.style.display = 'block';
-
-        const safeFileName = objectName.replace(/[^a-zA-Zа-яА-Я0-9-_]/g, '_') + '.pdf';
-        
-        // Генерация PDF в Blob для надежной отправки через Web Share API
-        html2pdf().from(element).outputPdf('blob').then(async (pdfBlob) => {
-            element.style.display = 'none';
-            const file = new File([pdfBlob], safeFileName, { type: 'application/pdf' });
-
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        title: 'Расчет стоимости 1 м²',
-                        text: `Расчет по объекту: ${objectName}`,
-                        files: [file]
-                    });
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        console.error("Ошибка при отправке файла:", err);
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'Расчет стоимости 1 м²',
+                            text: `Расчет по объекту: ${objectName}`,
+                            files: [file]
+                        });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error("Ошибка при отправке файла:", err);
+                        }
                     }
+                } else {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(pdfBlob);
+                    link.download = safeFileName;
+                    link.click();
+                    alert("Файл сформирован и сохранен на устройство.");
                 }
-            } else {
-                // Если sharing не поддерживается, делаем принудительное скачивание как фолбэк
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(pdfBlob);
-                link.download = safeFileName;
-                link.click();
-                alert("Файл сформирован и сохранен на устройство.");
-            }
-        });
+            });
+        }
     }
 
     /* Админ функции */
@@ -898,3 +879,8 @@
 
 </body>
 </html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
+print("File generated successfully.")
