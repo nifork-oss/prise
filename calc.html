@@ -1,133 +1,294 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Прайс-лист работ и услуг</title>
-    <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1, h2, h3, h4 { text-align: center; color: #1a1a1a; margin-top: 0; }
-        
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #28a745; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-align: center; }
-        .nav-btn:active { background: #218838; }
-
-        .info-box { background: #eef6ff; border-left: 4px solid #007bff; padding: 12px 15px; border-radius: 6px; font-size: 13px; line-height: 1.5; color: #2c3e50; margin-bottom: 20px; }
-        .info-box b { color: #0056b3; }
-
-        .service-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
-        .category-item { background: #e9ecef; font-weight: bold; font-size: 15px; margin-top: 15px; }
-
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
-        .btn-success { background: #28a745; color: white; margin-bottom: 15px; }
-        .btn-success:active { background: #218838; }
-
-        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>📋 Прайс-лист работ и услуг</h1>
-
-    <a href="calc.html" class="nav-btn">🔐 Вход для мастеров (Калькулятор и История)</a>
-
-    <button type="button" id="sharePriceBtn" class="btn btn-success">📤 Поделиться прайсом в мессенджер</button>
-
-    <!-- Пояснительный блок -->
-    <div class="info-box">
-        💡 <b>Правило расчёта погонных метров:</b><br>
-        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах рассчитываются элементы и конструкции, у которых один или несколько габаритных параметров (например, ширина или высота) составляют меньше 1 метра (колонны, откосы, плинтусы, карнизы, узкие ниши и прочие конструкции).
-    </div>
-
-    <div id="loader" class="loader">⏳ Загрузка актуального прайс-листа...</div>
-    <div id="priceList"></div>
-</div>
-
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
+    const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
-    let services = [];
+    let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }], history: [] };
+    let currentUser = null;
+    let invoiceCart = [];
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadPriceData();
-        document.getElementById('sharePriceBtn').addEventListener('click', sharePriceText);
+        loadCloudData();
+        document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
+        document.getElementById('objectAddress').addEventListener('input', updateInvoiceInfo);
     });
 
-    async function loadPriceData() {
+    async function loadCloudData() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
-            
             if (data.record) {
-                if (Array.isArray(data.record)) {
-                    services = data.record;
-                } else {
-                    services = data.record.services || [];
+                cloudData = data.record;
+                if (!cloudData.users || !Array.isArray(cloudData.users) || cloudData.users.length === 0) {
+                    cloudData.users = [{ login: "admin", pass: "12345" }];
                 }
+                if (!cloudData.history) cloudData.history = [];
             }
-
-            document.getElementById('loader').style.display = 'none';
-            renderPriceList();
+            const loader = document.getElementById('loader');
+            if (loader) loader.style.display = 'none';
+            renderServices();
         } catch (e) {
-            document.getElementById('loader').innerText = "Ошибка загрузки прайса.";
+            console.error("Ошибка загрузки", e);
         }
     }
 
-    function renderPriceList() {
-        const list = document.getElementById('priceList');
-        if (!list) return;
-        list.innerHTML = '';
+    async function saveCloudData() {
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": MASTER_KEY
+                },
+                body: JSON.stringify(cloudData)
+            });
+        } catch (e) {
+            console.error("Ошибка сохранения", e);
+        }
+    }
 
-        if (!services || services.length === 0) {
-            list.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пуст.</div>';
+    async function handleLogin() {
+        const l = document.getElementById('loginInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+        
+        await loadCloudData();
+
+        const user = cloudData.users.find(u => u.login === l && u.pass === p);
+        if (user) {
+            currentUser = user.login;
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            renderHistory();
+        } else {
+            document.getElementById('authError').style.display = 'block';
+        }
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('authScreen').style.display = 'block';
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginInput').value = '';
+        document.getElementById('passInput').value = '';
+    }
+
+    function switchTab(tab) {
+        document.getElementById('calcTab').style.display = tab === 'calc' ? 'block' : 'none';
+        document.getElementById('historyTab').style.display = tab === 'history' ? 'block' : 'none';
+        document.getElementById('tabCalcBtn').classList.toggle('active', tab === 'calc');
+        document.getElementById('tabHistoryBtn').classList.toggle('active', tab === 'history');
+        if (tab === 'history') renderHistory();
+    }
+
+    function renderServices() {
+        const container = document.getElementById('servicesList');
+        if (!container) return;
+        container.innerHTML = '';
+        const services = cloudData.services || [];
+
+        services.forEach((srv, idx) => {
+            if (srv.isCategory) {
+                const cat = document.createElement('div');
+                cat.className = 'category-header';
+                cat.innerText = srv.name;
+                container.appendChild(cat);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+                card.innerHTML = `
+                    <div class="service-title">
+                        <span>${srv.name}</span>
+                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                    <div class="unit-row">
+                        <input type="number" id="input_qty_${idx}" min="0" value="1" placeholder="Кол-во">
+                        <select id="select_unit_${idx}">${unitsOptions}</select>
+                    </div>
+                    <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                `;
+                container.appendChild(card);
+            }
+        });
+        renderInvoice();
+    }
+
+    function addToInvoice(idx) {
+        const qty = parseFloat(document.getElementById(`input_qty_${idx}`).value);
+        const unit = document.getElementById(`select_unit_${idx}`).value;
+        const srv = cloudData.services[idx];
+
+        if (isNaN(qty) || qty <= 0) {
+            alert('Укажите количество!');
             return;
         }
 
-        services.forEach((item) => {
-            const div = document.createElement('div');
-            if (item.isCategory) {
-                div.className = 'service-item category-item';
-                div.innerHTML = `<span>📁 <b>${item.name}</b></span>`;
-            } else {
-                div.className = 'service-item';
-                div.innerHTML = `<span>${item.name}</span><span><b>${Number(item.price).toLocaleString('ru-RU')} ₽</b></span>`;
-            }
-            list.appendChild(div);
+        invoiceCart.push({ name: srv.name, price: Number(srv.price), qty, unit });
+        renderInvoice();
+    }
+
+    function removeFromInvoice(idx) {
+        invoiceCart.splice(idx, 1);
+        renderInvoice();
+    }
+
+    function updateInvoiceInfo() {
+        const info = document.getElementById('invoiceInfo');
+        if (!info) return;
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+        info.innerHTML = `${client ? `<b>Заказчик:</b> ${client}<br>` : ''}${address ? `<b>Адрес:</b> ${address}` : ''}`;
+    }
+
+    function renderInvoice() {
+        const container = document.getElementById('invoiceItems');
+        if (!container) return;
+        container.innerHTML = '';
+        let total = 0;
+        updateInvoiceInfo();
+
+        if (invoiceCart.length === 0) {
+            container.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Счет пуст</div>';
+            document.getElementById('totalSum').textContent = '0';
+            return;
+        }
+
+        invoiceCart.forEach((item, idx) => {
+            const sum = item.qty * item.price;
+            total += sum;
+            container.innerHTML += `
+                <div class="invoice-item">
+                    <div class="invoice-item-info">
+                        <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
+                        <span>${item.name} (${item.qty} ${item.unit})</span>
+                    </div>
+                    <div><b>${sum.toLocaleString('ru-RU')} ₽</b></div>
+                </div>
+            `;
+        });
+        document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
+    }
+
+    function triggerChromePrintPDF() {
+        if (invoiceCart.length === 0) {
+            alert("Добавьте услуги в счёт!");
+            return;
+        }
+
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+
+        document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
+        
+        const clientEl = document.getElementById('printClient');
+        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
+        clientEl.style.display = client ? 'block' : 'none';
+
+        const addressEl = document.getElementById('printAddress');
+        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
+        addressEl.style.display = address ? 'block' : 'none';
+
+        let rows = '';
+        let total = 0;
+        invoiceCart.forEach(item => {
+            const sum = item.qty * item.price;
+            total += sum;
+            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+        });
+
+        document.getElementById('printTableBody').innerHTML = rows;
+        document.getElementById('printTotalSum').innerText = total.toLocaleString('ru-RU');
+
+        const element = document.getElementById('printArea');
+        element.style.display = 'block';
+
+        const opt = {
+            margin:       10,
+            filename:     `Schet_${client || 'zakazchik'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            element.style.display = 'none';
         });
     }
 
-    async function sharePriceText() {
-        let text = "📋 ПРАЙС-ЛИСТ РАБОТ И УСЛУГ\n";
-        text += `📅 Актуально на: ${new Date().toLocaleDateString('ru-RU')}\n`;
-        text += "-----------------------------------\n";
-        text += "💡 Правило погонных метров: Стоимость за пог. м равна стоимости за м² для элементов короче 1 метра.\n";
-        text += "-----------------------------------\n";
-
-        services.forEach(srv => {
-            if (srv.isCategory) {
-                text += `\n📁 *${srv.name}*\n`;
-            } else {
-                text += `• ${srv.name} — *${Number(srv.price).toLocaleString('ru-RU')} ₽*\n`;
-            }
-        });
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Прайс-лист', text: text });
-                return;
-            } catch (e) {}
+    async function saveInvoiceToHistory() {
+        if (invoiceCart.length === 0) {
+            alert("Счет пуст!");
+            return;
         }
 
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Прайс-лист скопирован в буфер обмена!");
-        }).catch(() => {
-            prompt("Скопируйте текст прайса:", text);
+        const client = document.getElementById('clientName').value.trim() || "Без имени";
+        const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
+        let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+        const newRecord = {
+            id: Date.now(),
+            author: currentUser,
+            date: new Date().toLocaleString('ru-RU'),
+            client,
+            address,
+            total,
+            items: [...invoiceCart]
+        };
+
+        if (!cloudData.history) cloudData.history = [];
+        cloudData.history.unshift(newRecord);
+        await saveCloudData();
+        alert("Счет успешно сохранен в историю!");
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        if (!list) return;
+        list.innerHTML = '';
+
+        let records = cloudData.history || [];
+        
+        if (currentUser !== 'admin') {
+            records = records.filter(r => r.author === currentUser);
+        }
+
+        if (records.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#888;">История счетов пуста</div>';
+            return;
+        }
+
+        records.forEach((rec) => {
+            let itemsHtml = rec.items.map(i => `• ${i.name} (${i.qty} ${i.unit}) — ${i.qty * i.price} ₽`).join('<br>');
+            list.innerHTML += `
+                <div class="history-card">
+                    <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    <b>📅 ${rec.date}</b> ${currentUser === 'admin' ? `(Мастер: <u>${rec.author}</u>)` : ''}<br>
+                    👤 <b>Заказчик:</b> ${rec.client}<br>
+                    📍 <b>Адрес:</b> ${rec.address}<br>
+                    <div style="margin: 6px 0; border-top: 1px dashed #ddd; padding-top: 4px; padding-right: 50px;">${itemsHtml}</div>
+                    <b>Итого: ${Number(rec.total).toLocaleString('ru-RU')} ₽</b>
+                </div>
+            `;
         });
+    }
+
+    async function deleteHistoryRecord(id) {
+        if (!confirm("Удалить этот счёт из истории?")) return;
+        
+        cloudData.history = cloudData.history.filter(r => r.id !== id);
+        await saveCloudData();
+        renderHistory();
+    }
+
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        invoiceCart = [];
+        renderServices();
     }
 </script>
 
