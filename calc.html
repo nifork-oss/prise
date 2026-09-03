@@ -133,6 +133,16 @@
     let currentUser = null;
     let invoiceCart = [];
 
+    // Безопасное экранирование спецсимволов для защиты от XSS
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         loadCloudData();
         document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
@@ -152,11 +162,12 @@
                 }
                 if (!cloudData.history) cloudData.history = [];
             }
+        } catch (e) {
+            console.error("Ошибка загрузки данных:", e);
+        } finally {
             const loader = document.getElementById('loader');
             if (loader) loader.style.display = 'none';
             renderServices();
-        } catch (e) {
-            console.error(e);
         }
     }
 
@@ -171,7 +182,7 @@
                 body: JSON.stringify(cloudData)
             });
         } catch (e) {
-            console.error(e);
+            console.error("Ошибка сохранения данных:", e);
         }
     }
 
@@ -219,15 +230,15 @@
             if (srv.isCategory) {
                 const cat = document.createElement('div');
                 cat.className = 'category-header';
-                cat.innerText = srv.name;
+                cat.textContent = srv.name;
                 container.appendChild(cat);
             } else {
                 const card = document.createElement('div');
                 card.className = 'service-card';
-                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
                 card.innerHTML = `
                     <div class="service-title">
-                        <span>${srv.name}</span>
+                        <span>${escapeHtml(srv.name)}</span>
                         <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
                     </div>
                     <div class="unit-row">
@@ -243,12 +254,17 @@
     }
 
     function addToInvoice(idx) {
-        const qty = parseFloat(document.getElementById(`input_qty_${idx}`).value);
-        const unit = document.getElementById(`select_unit_${idx}`).value;
+        const qtyInput = document.getElementById(`input_qty_${idx}`);
+        const unitSelect = document.getElementById(`select_unit_${idx}`);
+        
+        if (!qtyInput || !unitSelect) return;
+
+        const qty = parseFloat(qtyInput.value);
+        const unit = unitSelect.value;
         const srv = cloudData.services[idx];
 
         if (isNaN(qty) || qty <= 0) {
-            alert('Укажите количество!');
+            alert('Укажите корректное количество!');
             return;
         }
 
@@ -266,7 +282,11 @@
         if (!info) return;
         const client = document.getElementById('clientName').value.trim();
         const address = document.getElementById('objectAddress').value.trim();
-        info.innerHTML = `${client ? `<b>Заказчик:</b> ${client}<br>` : ''}${address ? `<b>Адрес:</b> ${address}` : ''}`;
+        
+        let html = '';
+        if (client) html += `<b>Заказчик:</b> ${escapeHtml(client)}<br>`;
+        if (address) html += `<b>Адрес:</b> ${escapeHtml(address)}`;
+        info.innerHTML = html;
     }
 
     function renderInvoice() {
@@ -289,7 +309,7 @@
                 <div class="invoice-item">
                     <div class="invoice-item-info">
                         <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
-                        <span>${item.name} (${item.qty} ${item.unit})</span>
+                        <span>${escapeHtml(item.name)} (${item.qty} ${escapeHtml(item.unit)})</span>
                     </div>
                     <div><b>${sum.toLocaleString('ru-RU')} ₽</b></div>
                 </div>
@@ -298,7 +318,7 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    function triggerChromePrintPDF() {
+    async function triggerChromePrintPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
             return;
@@ -310,11 +330,11 @@
         document.getElementById('printDate').innerText = new Date().toLocaleDateString('ru-RU');
         
         const clientEl = document.getElementById('printClient');
-        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${client}` : '';
+        clientEl.innerHTML = client ? `<b>Заказчик:</b> ${escapeHtml(client)}` : '';
         clientEl.style.display = client ? 'block' : 'none';
 
         const addressEl = document.getElementById('printAddress');
-        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${address}` : '';
+        addressEl.innerHTML = address ? `<b>Адрес объекта:</b> ${escapeHtml(address)}` : '';
         addressEl.style.display = address ? 'block' : 'none';
 
         let rows = '';
@@ -322,7 +342,14 @@
         invoiceCart.forEach(item => {
             const sum = item.qty * item.price;
             total += sum;
-            rows += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.unit}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td><td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td></tr>`;
+            rows += `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.name)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.unit)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${item.price.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${sum.toLocaleString('ru-RU')} ₽</td>
+                </tr>`;
         });
 
         document.getElementById('printTableBody').innerHTML = rows;
@@ -345,20 +372,17 @@
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        setTimeout(() => {
-            html2pdf().from(element).set(opt).save().then(() => {
-                element.style.position = 'fixed';
-                element.style.left = '-9999px';
-                element.style.opacity = '0';
-                element.style.zIndex = '-9999';
-            }).catch(err => {
-                console.error(err);
-                element.style.position = 'fixed';
-                element.style.left = '-9999px';
-                element.style.opacity = '0';
-                element.style.zIndex = '-9999';
-            });
-        }, 300);
+        try {
+            await html2pdf().from(element).set(opt).save();
+        } catch (err) {
+            console.error("Ошибка генерации PDF:", err);
+            alert("Не удалось сгенерировать PDF-файл.");
+        } finally {
+            element.style.position = 'fixed';
+            element.style.left = '-9999px';
+            element.style.opacity = '0';
+            element.style.zIndex = '-9999';
+        }
     }
 
     async function saveInvoiceToHistory() {
@@ -405,13 +429,16 @@
         }
 
         records.forEach((rec) => {
-            let itemsHtml = rec.items.map(i => `• ${i.name} (${i.qty} ${i.unit}) — ${i.qty * i.price} ₽`).join('<br>');
+            let itemsHtml = rec.items.map(i => 
+                `• ${escapeHtml(i.name)} (${i.qty} ${escapeHtml(i.unit)}) — ${(i.qty * i.price).toLocaleString('ru-RU')} ₽`
+            ).join('<br>');
+
             list.innerHTML += `
                 <div class="history-card">
                     <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
-                    <b>📅 ${rec.date}</b> ${currentUser === 'admin' ? `(Мастер: <u>${rec.author}</u>)` : ''}<br>
-                    👤 <b>Заказчик:</b> ${rec.client}<br>
-                    📍 <b>Адрес:</b> ${rec.address}<br>
+                    <b>📅 ${escapeHtml(rec.date)}</b> ${currentUser === 'admin' ? `(Мастер: <u>${escapeHtml(rec.author)}</u>)` : ''}<br>
+                    👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
+                    📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
                     <div style="margin: 6px 0; border-top: 1px dashed #ddd; padding-top: 4px; padding-right: 50px;">${itemsHtml}</div>
                     <b>Итого: ${Number(rec.total).toLocaleString('ru-RU')} ₽</b>
                 </div>
