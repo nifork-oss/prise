@@ -3,88 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход и Калькулятор</title>
+    <title>Кабинет мастера и Калькулятор</title>
+    <!-- Прямое подключение html2canvas и jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
-        
-        .nav-top-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 5px rgba(108,117,125,0.3); }
-        
-        /* Карточка авторизации */
-        .login-card { max-width: 420px; margin: 40px auto; background: #fafafa; border: 1px solid #eaeaea; border-radius: 12px; padding: 30px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
-        .login-card h2 { text-align: center; font-size: 24px; margin-top: 0; margin-bottom: 25px; color: #111; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; background: #fff; }
-        .form-group input:focus { border-color: #007bff; }
-        
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; text-align: center; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-primary:hover { background: #0069d9; }
-        .btn-danger { background: #dc3545; color: white; }
+        h1, h2, h3 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        h1 { font-size: 22px; margin-bottom: 15px; }
+        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; text-align: center; }
+        .auth-container { max-width: 320px; margin: 40px auto; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #ddd; }
+        .auth-container input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .category-header { background: #e9ecef; font-weight: bold; padding: 10px; border-radius: 6px; margin: 15px 0 8px 0; font-size: 16px; color: #495057; }
+        .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .service-price { color: #28a745; font-weight: bold; white-space: nowrap; }
+        .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .unit-row input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .unit-row select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: white; flex: 1; }
+        .add-to-cart-btn { background: #28a745; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; font-weight: 600; width: 100%; }
+        .total-box { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; text-align: right; font-size: 20px; font-weight: bold; }
+        .invoice-preview { background: #fff; border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .invoice-item { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .invoice-item-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .btn-delete-item { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .action-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; width: 100%; text-align: center; }
         .btn-success { background: #28a745; color: white; }
-        
-        .app-section { display: none; }
-        .user-bar { display: flex; justify-content: space-between; align-items: center; background: #eef7ff; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bce0fd; }
-        
-        .calc-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        .calc-item select { flex: 2; }
-        .calc-item input { flex: 1; }
-        
-        .total-box { font-size: 20px; font-weight: bold; color: #28a745; text-align: right; margin: 15px 0; }
-        .history-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 14px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 10px; background: #e9ecef; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .tab-btn.active { background: #007bff; color: white; }
+        .history-card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; position: relative; }
+        .history-card b { color: #007bff; }
+        .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <a href="index.html" class="nav-top-btn">← На главную (Прайс-лист)</a>
+<div id="authScreen" class="container">
+    <a href="index.html" class="nav-btn">⬅ На главную (Прайс-лист)</a>
+    <div class="auth-container">
+        <h2>🔐 Вход для мастеров</h2>
+        <input type="text" id="loginInput" placeholder="Логин (например, admin)">
+        <input type="password" id="passInput" placeholder="Пароль">
+        <button type="button" class="btn btn-primary" onclick="handleLogin()">Войти</button>
+        <div id="authError" style="color:red; font-size:12px; margin-top:10px; display:none;">Неверный логин или пароль</div>
+    </div>
+</div>
 
-    <!-- Блок авторизации без жёлтой кнопки сброса -->
-    <div id="loginBox" class="login-card">
-        <h2>🔐 Вход в систему</h2>
-        <div class="form-group">
-            <input type="text" id="loginInput" placeholder="Логин">
-        </div>
-        <div class="form-group">
-            <input type="password" id="passInput" placeholder="Пароль">
-        </div>
-        <button type="button" class="btn btn-primary" onclick="loginUser()">Войти</button>
+<div id="appScreen" class="container" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <a href="index.html" class="nav-btn" style="margin:0;">⬅ На прайс</a>
+        <button type="button" class="btn btn-danger" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="handleLogout()">Выйти</button>
     </div>
 
-    <!-- Основной кабинет калькулятора -->
-    <div id="appBox" class="app-section">
-        <div class="user-bar">
-            <span id="userNameDisplay">👤 Мастер: <b>admin</b></span>
-            <button type="button" class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 13px;" onclick="logout()">Выйти</button>
+    <div class="tab-menu">
+        <button type="button" class="tab-btn active" id="tabCalcBtn" onclick="switchTab('calc')">📐 Калькулятор счёта</button>
+        <button type="button" class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📂 История счетов</button>
+    </div>
+
+    <div id="calcTab">
+        <h1>📐 Калькулятор счёта</h1>
+        <div class="form-group">
+            <label>ФИО Заказчика</label>
+            <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+        </div>
+        <div class="form-group">
+            <label>Адрес объекта</label>
+            <input type="text" id="objectAddress" placeholder="г. Москва, ул. Ленина, д. 1">
         </div>
 
-        <h2>📐 Калькулятор сметы</h2>
-        <div id="calcRows"></div>
-        
-        <button type="button" class="btn btn-success" style="margin-bottom: 15px;" onclick="addCalcRow()">➕ Добавить позицию</button>
+        <h2>🛠 Выберите услуги:</h2>
+        <div id="loader" class="loader">⏳ Загрузка прайса...</div>
+        <div id="servicesList"></div>
 
-        <div class="total-box">
-            Итого: <span id="totalSum">0</span> ₽
+        <h2>🧾 Предпросмотр счета</h2>
+        <div class="invoice-preview">
+            <div id="invoiceInfo" style="margin-bottom: 10px; font-size: 13px; color: #555;"></div>
+            <div id="invoiceItems"></div>
+            <div class="total-box">Итого: <span id="totalSum">0</span> ₽</div>
         </div>
 
-        <button type="button" class="btn btn-primary" onclick="saveCalculation()">💾 Сохранить расчёт в историю</button>
+        <div class="action-btns">
+            <button type="button" class="btn btn-success" onclick="sendPDF()">📤 Отправить счет (PDF)</button>
+            <button type="button" class="btn btn-primary" onclick="saveInvoiceToHistory()">💾 Сохранить в историю (черновик)</button>
+            <button type="button" class="btn btn-danger" onclick="resetAll()">❌ Очистить</button>
+        </div>
+    </div>
 
-        <h3 style="margin-top: 30px;">📜 История расчётов</h3>
-        <div id="historyContainer"></div>
+    <div id="historyTab" style="display: none;">
+        <h1>📂 История счетов</h1>
+        <div id="historyList">Загрузка истории...</div>
     </div>
 </div>
 
 <script>
     const BIN_ID = "6a98820eda38895dfe310361";
     const MASTER_KEY = "$2a$10$V5zoj8HIhi0GtDS/ZY5EXe0m1yUvWzV8enXWJjCCaeREOkxKbEvyC";
+    const DEFAULT_UNITS = ['м²', 'пог. м', 'шт.', 'компл.', 'час', 'усл.'];
 
     let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }], history: [] };
+    let currentUser = null;
+    let invoiceCart = [];
 
-    window.addEventListener('DOMContentLoaded', async () => {
-        await loadCloudData();
-        checkAuth();
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadCloudData();
+        document.getElementById('clientName').addEventListener('input', updateInvoiceInfo);
+        document.getElementById('objectAddress').addEventListener('input', updateInvoiceInfo);
     });
 
     async function loadCloudData() {
@@ -93,9 +135,19 @@
                 headers: { "X-Master-Key": MASTER_KEY }
             });
             const data = await res.json();
-            if (data.record) cloudData = data.record;
+            if (data.record) {
+                cloudData = data.record;
+                if (!cloudData.users || !Array.isArray(cloudData.users) || cloudData.users.length === 0) {
+                    cloudData.users = [{ login: "admin", pass: "12345" }];
+                }
+                if (!cloudData.history) cloudData.history = [];
+            }
         } catch (e) {
-            console.error(e);
+            console.error("Ошибка загрузки данных:", e);
+        } finally {
+            const loader = document.getElementById('loader');
+            if (loader) loader.style.display = 'none';
+            renderServices();
         }
     }
 
@@ -103,134 +155,335 @@
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: "PUT",
-                headers: { 
-                    "Content-Type": "application/json", 
-                    "X-Master-Key": MASTER_KEY 
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": MASTER_KEY
                 },
                 body: JSON.stringify(cloudData)
             });
         } catch (e) {
-            console.error(e);
-            alert("Ошибка сохранения в облако!");
+            console.error("Ошибка сохранения данных:", e);
         }
     }
 
-    function checkAuth() {
-        const user = localStorage.getItem('currentUser');
+    async function handleLogin() {
+        const l = document.getElementById('loginInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+        
+        await loadCloudData();
+
+        const user = cloudData.users.find(u => u.login === l && u.pass === p);
         if (user) {
-            document.getElementById('loginBox').style.display = 'none';
-            document.getElementById('appBox').style.display = 'block';
-            document.getElementById('userNameDisplay').innerHTML = `👤 Мастер: <b>${user}</b>`;
-            if (document.getElementById('calcRows').children.length === 0) {
-                addCalcRow();
-            }
+            currentUser = user.login;
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
             renderHistory();
         } else {
-            document.getElementById('loginBox').style.display = 'block';
-            document.getElementById('appBox').style.display = 'none';
+            document.getElementById('authError').style.display = 'block';
         }
     }
 
-    function loginUser() {
-        const login = document.getElementById('loginInput').value.trim();
-        const pass = document.getElementById('passInput').value.trim();
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('authScreen').style.display = 'block';
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginInput').value = '';
+        document.getElementById('passInput').value = '';
+    }
 
-        if (!login || !pass) {
-            alert("Заполните логин и пароль!");
-            return;
-        }
+    function switchTab(tab) {
+        document.getElementById('calcTab').style.display = tab === 'calc' ? 'block' : 'none';
+        document.getElementById('historyTab').style.display = tab === 'history' ? 'block' : 'none';
+        document.getElementById('tabCalcBtn').classList.toggle('active', tab === 'calc');
+        document.getElementById('tabHistoryBtn').classList.toggle('active', tab === 'history');
+        if (tab === 'history') renderHistory();
+    }
 
-        const users = cloudData.users || [{ login: "admin", pass: "12345" }];
-        const found = users.find(u => u.login === login && u.pass === pass);
+    function renderServices() {
+        const container = document.getElementById('servicesList');
+        if (!container) return;
+        container.innerHTML = '';
+        const services = cloudData.services || [];
 
-        if (found) {
-            localStorage.setItem('currentUser', login);
-            if (login === 'admin') {
-                localStorage.setItem('isAdminAuthorized', 'true');
+        services.forEach((srv, idx) => {
+            if (srv.isCategory) {
+                const cat = document.createElement('div');
+                cat.className = 'category-header';
+                cat.textContent = srv.name;
+                container.appendChild(cat);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                let unitsOptions = DEFAULT_UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+                card.innerHTML = `
+                    <div class="service-title">
+                        <span>${escapeHtml(srv.name)}</span>
+                        <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                    <div class="unit-row">
+                        <input type="number" id="input_qty_${idx}" min="0" value="1" placeholder="Кол-во">
+                        <select id="select_unit_${idx}">${unitsOptions}</select>
+                    </div>
+                    <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
+                `;
+                container.appendChild(card);
             }
-            checkAuth();
-        } else {
-            alert("Неверный логин или пароль!");
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('isAdminAuthorized');
-        checkAuth();
-    }
-
-    function addCalcRow() {
-        const container = document.getElementById('calcRows');
-        const row = document.createElement('div');
-        row.className = 'calc-item';
-
-        const services = (cloudData.services || []).filter(s => !s.isCategory);
-        let options = '<option value="0">-- Выберите услугу --</option>';
-        services.forEach(s => {
-            options += `<option value="${s.price}">${s.name} (${Number(s.price).toLocaleString('ru-RU')} ₽)</option>`;
         });
-
-        row.innerHTML = `
-            <select onchange="calculateTotal()">${options}</select>
-            <input type="number" placeholder="Кол-во" min="1" value="1" oninput="calculateTotal()">
-            <button type="button" class="btn btn-danger" style="width: auto; padding: 8px 12px;" onclick="this.parentElement.remove(); calculateTotal();">✕</button>
-        `;
-        container.appendChild(row);
+        renderInvoice();
     }
 
-    function calculateTotal() {
-        const rows = document.querySelectorAll('.calc-item');
-        let total = 0;
+    function addToInvoice(idx) {
+        const qtyInput = document.getElementById(`input_qty_${idx}`);
+        const unitSelect = document.getElementById(`select_unit_${idx}`);
+        
+        if (!qtyInput || !unitSelect) return;
 
-        rows.forEach(row => {
-            const price = Number(row.querySelector('select').value || 0);
-            const qty = Number(row.querySelector('input').value || 0);
-            total += price * qty;
-        });
+        const qty = parseFloat(qtyInput.value);
+        const unit = unitSelect.value;
+        const srv = cloudData.services[idx];
 
-        document.getElementById('totalSum').innerText = total.toLocaleString('ru-RU');
-        return total;
-    }
-
-    async function saveCalculation() {
-        const total = calculateTotal();
-        if (total === 0) {
-            alert("Добавьте хотя бы одну позицию с ценой!");
+        if (isNaN(qty) || qty <= 0) {
+            alert('Укажите корректное количество!');
             return;
         }
 
-        const user = localStorage.getItem('currentUser') || 'Мастер';
-        const date = new Date().toLocaleString('ru-RU');
+        invoiceCart.push({ name: srv.name, price: Number(srv.price), qty, unit });
+        renderInvoice();
+    }
+
+    function removeFromInvoice(idx) {
+        invoiceCart.splice(idx, 1);
+        renderInvoice();
+    }
+
+    function updateInvoiceInfo() {
+        const info = document.getElementById('invoiceInfo');
+        if (!info) return;
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+        
+        let html = '';
+        if (client) html += `<b>Заказчик:</b> ${escapeHtml(client)}<br>`;
+        if (address) html += `<b>Адрес:</b> ${escapeHtml(address)}`;
+        info.innerHTML = html;
+    }
+
+    function renderInvoice() {
+        const container = document.getElementById('invoiceItems');
+        if (!container) return;
+        container.innerHTML = '';
+        let total = 0;
+        updateInvoiceInfo();
+
+        if (invoiceCart.length === 0) {
+            container.innerHTML = '<div style="color:#888; font-size: 13px; text-align:center;">Счет пуст</div>';
+            document.getElementById('totalSum').textContent = '0';
+            return;
+        }
+
+        invoiceCart.forEach((item, idx) => {
+            const sum = item.qty * item.price;
+            total += sum;
+            container.innerHTML += `
+                <div class="invoice-item">
+                    <div class="invoice-item-info">
+                        <button type="button" class="btn-delete-item" onclick="removeFromInvoice(${idx})">✕</button>
+                        <span>${escapeHtml(item.name)} (${item.qty} ${escapeHtml(item.unit)})</span>
+                    </div>
+                    <div><b>${sum.toLocaleString('ru-RU')} ₽</b></div>
+                </div>
+            `;
+        });
+        document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
+    }
+
+    // Полностью динамическая генерация PDF без пустых кадров
+    async function sendPDF() {
+        if (invoiceCart.length === 0) {
+            alert("Добавьте услуги в счёт!");
+            return;
+        }
+
+        const client = document.getElementById('clientName').value.trim();
+        const address = document.getElementById('objectAddress').value.trim();
+        const dateStr = new Date().toLocaleDateString('ru-RU');
+
+        let rows = '';
+        let total = 0;
+        invoiceCart.forEach(item => {
+            const sum = item.qty * item.price;
+            total += sum;
+            rows += `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(item.name)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(item.unit)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.price.toLocaleString('ru-RU')} ₽</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${sum.toLocaleString('ru-RU')} ₽</td>
+                </tr>`;
+        });
+
+        // Создаем видимый элемент строго по текущим координатам скролла, чтобы html2canvas его гарантированно сфотографировал
+        const printContainer = document.createElement('div');
+        printContainer.style.position = 'absolute';
+        printContainer.style.top = (window.scrollY || document.documentElement.scrollTop || 0) + 'px';
+        printContainer.style.left = '0';
+        printContainer.style.width = '750px';
+        printContainer.style.background = '#ffffff';
+        printContainer.style.color = '#333333';
+        printContainer.style.padding = '30px';
+        printContainer.style.boxSizing = 'border-box';
+        printContainer.style.zIndex = '999999';
+        printContainer.style.fontFamily = 'Arial, sans-serif';
+
+        printContainer.innerHTML = `
+            <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0; font-size: 22px;">СЧЕТ НА ОПЛАТУ УСЛУГ</h2>
+            <p style="margin: 6px 0; font-size: 14px;"><b>Дата:</b> ${dateStr}</p>
+            ${client ? `<p style="margin: 6px 0; font-size: 14px;"><b>Заказчик:</b> ${escapeHtml(client)}</p>` : ''}
+            ${address ? `<p style="margin: 6px 0; font-size: 14px;"><b>Адрес объекта:</b> ${escapeHtml(address)}</p>` : ''}
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Наименование</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Кол-во</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Ед.</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Цена</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <h3 style="text-align: right; margin-top: 25px; font-size: 18px; color: #000;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+        `;
+
+        document.body.appendChild(printContainer);
+
+        // Пауза для полной отрисовки браузером
+        await new Promise(r => setTimeout(r, 150));
+
+        try {
+            const canvas = await html2canvas(printContainer, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                windowWidth: 750
+            });
+
+            // Удаляем временный элемент из видимости
+            document.body.removeChild(printContainer);
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+            const pdfBlob = pdf.output('blob');
+            const fileName = `Schet_${client || 'zakazchik'}.pdf`;
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Счет на оплату',
+                    text: `Счет на оплату услуг для ${client || 'заказчика'}`,
+                    files: [file]
+                });
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                alert("Файл PDF успешно создан и скачан.");
+            }
+        } catch (err) {
+            if (printContainer.parentNode) document.body.removeChild(printContainer);
+            console.error("Ошибка при создании PDF:", err);
+            alert("Ошибка при сборке PDF: " + err.message);
+        }
+    }
+
+    async function saveInvoiceToHistory() {
+        if (invoiceCart.length === 0) {
+            alert("Счет пуст!");
+            return;
+        }
+
+        const client = document.getElementById('clientName').value.trim() || "Без имени";
+        const address = document.getElementById('objectAddress').value.trim() || "Без адреса";
+        let total = invoiceCart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+        const newRecord = {
+            id: Date.now(),
+            author: currentUser,
+            date: new Date().toLocaleString('ru-RU'),
+            client,
+            address,
+            total,
+            items: [...invoiceCart]
+        };
 
         if (!cloudData.history) cloudData.history = [];
-        cloudData.history.unshift({ user, date, total });
-
+        cloudData.history.unshift(newRecord);
         await saveCloudData();
+        alert("Счет успешно сохранен в историю!");
         renderHistory();
-        alert("Расчёт успешно сохранён!");
     }
 
     function renderHistory() {
-        const container = document.getElementById('historyContainer');
-        if (!container) return;
-        container.innerHTML = '';
+        const list = document.getElementById('historyList');
+        if (!list) return;
+        list.innerHTML = '';
 
-        const history = cloudData.history || [];
-        if (history.length === 0) {
-            container.innerHTML = '<div style="color:#888;">История пока пуста</div>';
+        let records = cloudData.history || [];
+        
+        if (currentUser !== 'admin') {
+            records = records.filter(r => r.author === currentUser);
+        }
+
+        if (records.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#888;">История счетов пуста</div>';
             return;
         }
 
-        history.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'history-card';
-            card.innerHTML = `
-                <div><b>Мастер:</b> ${item.user} | <b>Дата:</b> ${item.date}</div>
-                <div style="color:#28a745; font-weight:bold; margin-top:4px;">Сумма: ${Number(item.total).toLocaleString('ru-RU')} ₽</div>
+        records.forEach((rec) => {
+            let itemsHtml = rec.items.map(i => 
+                `• ${escapeHtml(i.name)} (${i.qty} ${escapeHtml(i.unit)}) — ${(i.qty * i.price).toLocaleString('ru-RU')} ₽`
+            ).join('<br>');
+
+            list.innerHTML += `
+                <div class="history-card">
+                    <button type="button" class="btn-delete-history" onclick="deleteHistoryRecord(${rec.id})">Удалить</button>
+                    <b>📅 ${escapeHtml(rec.date)}</b> ${currentUser === 'admin' ? `(Мастер: <u>${escapeHtml(rec.author)}</u>)` : ''}<br>
+                    👤 <b>Заказчик:</b> ${escapeHtml(rec.client)}<br>
+                    📍 <b>Адрес:</b> ${escapeHtml(rec.address)}<br>
+                    <div style="margin: 6px 0; border-top: 1px dashed #ddd; padding-top: 4px; padding-right: 50px;">${itemsHtml}</div>
+                    <b>Итого: ${Number(rec.total).toLocaleString('ru-RU')} ₽</b>
+                </div>
             `;
-            container.appendChild(card);
         });
+    }
+
+    async function deleteHistoryRecord(id) {
+        if (!confirm("Удалить этот счёт из истории?")) return;
+        
+        cloudData.history = cloudData.history.filter(r => r.id !== id);
+        await saveCloudData();
+        renderHistory();
+    }
+
+    function resetAll() {
+        document.getElementById('clientName').value = '';
+        document.getElementById('objectAddress').value = '';
+        invoiceCart = [];
+        renderServices();
     }
 </script>
 
