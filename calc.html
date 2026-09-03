@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кабинет мастера и Калькулятор</title>
-    <!-- Прямое подключение html2canvas и jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -44,6 +43,7 @@
         .history-card b { color: #007bff; }
         .btn-delete-history { position: absolute; top: 12px; right: 12px; background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
+        .calc-note { margin-top: 15px; padding: 12px; background: #eaf4ff; border-left: 4px solid #007bff; font-size: 12px; color: #495057; border-radius: 4px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -90,6 +90,11 @@
             <div id="invoiceInfo" style="margin-bottom: 10px; font-size: 13px; color: #555;"></div>
             <div id="invoiceItems"></div>
             <div class="total-box">Итого: <span id="totalSum">0</span> ₽</div>
+        </div>
+
+        <div class="calc-note">
+            <b>📌 Примечание по расчёту линейных элементов:</b><br>
+            Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, углы, примыкания и декоративные элементы. Любой отрезок или сторона менее 1 метра округляется в расчёте до 1 полного погонного метра.
         </div>
 
         <div class="action-btns">
@@ -222,7 +227,7 @@
                         <span class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</span>
                     </div>
                     <div class="unit-row">
-                        <input type="number" id="input_qty_${idx}" min="0" value="1" placeholder="Кол-во">
+                        <input type="number" id="input_qty_${idx}" min="0" step="0.1" value="1" placeholder="Кол-во">
                         <select id="select_unit_${idx}">${unitsOptions}</select>
                     </div>
                     <button type="button" class="add-to-cart-btn" onclick="addToInvoice(${idx})">➕ Добавить в счёт</button>
@@ -239,13 +244,18 @@
         
         if (!qtyInput || !unitSelect) return;
 
-        const qty = parseFloat(qtyInput.value);
+        let qty = parseFloat(qtyInput.value);
         const unit = unitSelect.value;
         const srv = cloudData.services[idx];
 
         if (isNaN(qty) || qty <= 0) {
             alert('Укажите корректное количество!');
             return;
+        }
+
+        // Округление погонных метров в большую сторону
+        if (unit === 'пог. м') {
+            qty = Math.ceil(qty);
         }
 
         invoiceCart.push({ name: srv.name, price: Number(srv.price), qty, unit });
@@ -298,7 +308,6 @@
         document.getElementById('totalSum').textContent = total.toLocaleString('ru-RU');
     }
 
-    // Полностью динамическая генерация PDF без пустых кадров
     async function sendPDF() {
         if (invoiceCart.length === 0) {
             alert("Добавьте услуги в счёт!");
@@ -324,7 +333,6 @@
                 </tr>`;
         });
 
-        // Создаем видимый элемент строго по текущим координатам скролла, чтобы html2canvas его гарантированно сфотографировал
         const printContainer = document.createElement('div');
         printContainer.style.position = 'absolute';
         printContainer.style.top = (window.scrollY || document.documentElement.scrollTop || 0) + 'px';
@@ -354,12 +362,16 @@
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
-            <h3 style="text-align: right; margin-top: 25px; font-size: 18px; color: #000;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+            <h3 style="text-align: right; margin-top: 20px; font-size: 18px; color: #000;">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</h3>
+            
+            <div style="margin-top: 25px; padding: 12px; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; font-size: 11px; color: #555; line-height: 1.5;">
+                <b>📌 Примечание по расчёту линейных элементов:</b><br>
+                Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, углы, примыкания и декоративные элементы. Любой отрезок или сторона менее 1 метра округляется в расчёте до 1 полного погонного метра.
+            </div>
         `;
 
         document.body.appendChild(printContainer);
 
-        // Пауза для полной отрисовки браузером
         await new Promise(r => setTimeout(r, 150));
 
         try {
@@ -371,7 +383,6 @@
                 windowWidth: 750
             });
 
-            // Удаляем временный элемент из видимости
             document.body.removeChild(printContainer);
 
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
