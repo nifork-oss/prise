@@ -68,8 +68,9 @@
         .admin-controls { display: none; background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; margin-bottom: 16px; }
         .loader { text-align: center; color: #4f46e5; font-weight: 600; padding: 16px; font-size: 13px; }
 
-        /* Блок для истории расчетов у админа */
-        .admin-history-box { display: none; margin-top: 20px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px; }
+        /* Ограниченная по высоте история расчетов с прокруткой, чтобы не ломать верстку */
+        .admin-history-box { display: none; margin-top: 15px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px; }
+        .admin-history-list { max-height: 160px; overflow-y: auto; padding-right: 4px; }
         .history-card { background: #fff; border: 1px solid #fcd34d; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 12px; }
 
         @media (min-width: 481px) {
@@ -95,14 +96,16 @@
 
     <div id="adminPanel" class="admin-controls">
         <h3 style="color: #b45309; font-size: 14px; margin-top:0;">Панель администратора</h3>
-        <button type="button" class="btn btn-success btn-sm" onclick="addCategoryPrompt()" style="margin-bottom:8px;">➕ Добавить категорию</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="addItemPrompt()" style="margin-bottom:8px;">➕ Добавить услугу</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="saveToCloud()" style="background:#059669; margin-bottom:8px;">💾 Сохранить изменения на сервер</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <button type="button" class="btn btn-success btn-sm" onclick="addCategoryPrompt()">➕ Категория</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="addItemPrompt()">➕ Услуга в категорию</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveToCloud()" style="background:#059669;">💾 Сохранить в облако</button>
+        </div>
         
-        <!-- История подсчетов пирога для админа -->
+        <!-- История подсчетов пирога (с фиксированной высотой и скроллом) -->
         <div id="adminHistorySection" class="admin-history-box">
-            <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 13px;">📊 Последние расчеты «Пирога» от пользователей:</h4>
-            <div id="adminHistoryList" style="max-height: 200px; overflow-y: auto;"></div>
+            <h4 style="margin: 0 0 6px 0; color: #b45309; font-size: 12px;">📊 История расчетов «Пирога»:</h4>
+            <div id="adminHistoryList" class="admin-history-list"></div>
         </div>
     </div>
 
@@ -204,7 +207,6 @@
         }
     }
 
-    // Автоматическое сохранение нового расчета в историю облака
     async function saveCalculationToHistory(objectName, totalSum, itemsList) {
         if (!cloudData.history) cloudData.history = [];
         
@@ -215,12 +217,9 @@
             items: itemsList
         };
 
-        // Добавляем в начало списка
         cloudData.history.unshift(newRecord);
-        // Ограничим историю последними 30 записями
-        if (cloudData.history.length > 30) cloudData.history.pop();
+        if (cloudData.history.length > 50) cloudData.history.pop();
 
-        // Тихо отправляем в облако
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: "PUT",
@@ -348,8 +347,9 @@
             if (isAdmin && group.category) {
                 adminCatButtons = `
                     <div style="display:flex; gap:4px;" onclick="event.stopPropagation()">
-                        <button type="button" class="btn btn-sm btn-primary" onclick="editItem(${catIdx})">✏️</button>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${catIdx})">🗑</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="addItemToCategoryPrompt(${catIdx})" title="Добавить услугу в эту категорию">➕</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="editItem(${catIdx})" title="Изменить категорию">✏️</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${catIdx})" title="Удалить категорию">🗑</button>
                     </div>`;
             }
 
@@ -360,7 +360,7 @@
                 <div style="display:flex; align-items:center; gap:8px; flex:1;">
                     <span>${escapeHtml(catName)}</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
                     ${adminCatButtons}
                     <span class="accordion-arrow">▼</span>
                 </div>
@@ -386,7 +386,6 @@
                             </div>`;
                     }
 
-                    // Единицы измерения полностью убраны из карточки прайс-листа по вашему требованию
                     const card = document.createElement('div');
                     card.className = 'service-card';
                     card.innerHTML = `
@@ -583,7 +582,6 @@
             }
         });
 
-        // Автоматически сохраняем этот расчет для администратора
         await saveCalculationToHistory(objectName, total, itemNamesArray);
         if (isAdmin) renderAdminHistory();
 
@@ -681,6 +679,7 @@
         renderCalcCheckboxes();
     }
 
+    // Общая кнопка (добавляет в самый конец массива или в конец списка)
     function addItemPrompt() {
         const name = prompt("Название услуги:");
         if (!name) return;
@@ -693,6 +692,34 @@
         const unit = prompt("Единица измерения (м², пог. м, шт., компл., час):", "м²") || "м²";
 
         cloudData.services.push({ name: name.trim(), price, unit: unit.trim(), isCategory: false, isLockedForSquare: false });
+        renderPriceList();
+        renderCalcCheckboxes();
+    }
+
+    // Добавление услуги прямо в конкретную категорию по её индексу
+    function addItemToCategoryPrompt(catIdx) {
+        const name = prompt("Название новой услуги в эту категорию:");
+        if (!name) return;
+        const priceStr = prompt("Цена за единицу (₽):", "0");
+        const price = parseFloat(priceStr);
+        if (isNaN(price)) {
+            alert("Некорректная цена!");
+            return;
+        }
+        const unit = prompt("Единица измерения (м², пог. м, шт., компл., час):", "м²") || "м²";
+
+        const newItem = { name: name.trim(), price, unit: unit.trim(), isCategory: false, isLockedForSquare: false };
+
+        // Ищем конец этой категории (перед следующей категорией или концом массива), чтобы вставить услугу внутрь группы
+        let insertIndex = cloudData.services.length;
+        for (let i = catIdx + 1; i < cloudData.services.length; i++) {
+            if (cloudData.services[i].isCategory) {
+                insertIndex = i;
+                break;
+            }
+        }
+
+        cloudData.services.splice(insertIndex, 0, newItem);
         renderPriceList();
         renderCalcCheckboxes();
     }
