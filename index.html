@@ -3,80 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Прайс-лист работ и услуг</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <title>Вход и Калькулятор</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
-        h1, h2 { text-align: center; color: #1a1a1a; margin-top: 0; }
-        h1 { font-size: 22px; margin-bottom: 15px; }
         
-        .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
-        .action-main-btn { background: #28a745; margin-bottom: 15px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
+        .nav-top-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #6c757d; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 5px rgba(108,117,125,0.3); }
         
-        .search-box { margin-bottom: 15px; }
-        .search-box input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-
-        .info-box { background: #eef7ff; border: 1px solid #bce0fd; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; font-size: 13px; color: #004085; line-height: 1.4; }
-        .info-box b { display: block; margin-bottom: 4px; font-size: 14px; color: #0056b3; }
+        /* Карточка авторизации */
+        .login-card { max-width: 420px; margin: 40px auto; background: #fafafa; border: 1px solid #eaeaea; border-radius: 12px; padding: 30px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .login-card h2 { text-align: center; font-size: 24px; margin-top: 0; margin-bottom: 25px; color: #111; display: flex; align-items: center; justify-content: center; gap: 8px; }
         
-        .category-header { background: #e9ecef; font-weight: bold; padding: 12px; border-radius: 6px; margin: 20px 0 10px 0; font-size: 16px; color: #495057; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .service-card { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .service-info { flex: 1; padding-right: 10px; }
-        .service-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: #222; }
-        .service-price { color: #28a745; font-weight: bold; font-size: 16px; white-space: nowrap; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; background: #fff; }
+        .form-group input:focus { border-color: #007bff; }
         
-        .admin-controls { display: none; background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .admin-header { margin-bottom: 10px; }
-        .admin-controls h3 { margin: 0; font-size: 16px; color: #856404; }
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; font-weight: 500; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        
-        .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; width: 100%; text-align: center; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-warning { background: #ffc107; color: #212529; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; text-align: center; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0069d9; }
         .btn-danger { background: #dc3545; color: white; }
-        .btn-sm { padding: 4px 8px; font-size: 11px; width: auto; }
-        .action-row { display: flex; gap: 5px; align-items: center; }
-        .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
+        .btn-success { background: #28a745; color: white; }
+        
+        .app-section { display: none; }
+        .user-bar { display: flex; justify-content: space-between; align-items: center; background: #eef7ff; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bce0fd; }
+        
+        .calc-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .calc-item select { flex: 2; }
+        .calc-item input { flex: 1; }
+        
+        .total-box { font-size: 20px; font-weight: bold; color: #28a745; text-align: right; margin: 15px 0; }
+        .history-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="calc.html" class="nav-btn" id="loginNavBtn">🔐 Вход для мастеров (Калькулятор)</a>
-    <button type="button" class="action-main-btn" onclick="generatePricePDF()">📄 Отправить прайс-лист в PDF</button>
+    <a href="index.html" class="nav-top-btn">← На главную (Прайс-лист)</a>
 
-    <h1>📋 Прайс-лист услуг</h1>
-
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="🔍 Поиск услуги..." oninput="renderPriceList()">
-    </div>
-
-    <div class="info-box">
-        <b>💡 Правило расчёта погонных метров:</b>
-        Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
-    </div>
-
-    <div id="adminPanel" class="admin-controls">
-        <div class="admin-header">
-            <h3>⚙️ Режим редактирования (Админ)</h3>
+    <!-- Блок авторизации -->
+    <div id="loginBox" class="login-card">
+        <h2>🔐 Вход в систему</h2>
+        <div class="form-group">
+            <input type="text" id="loginInput" placeholder="Логин">
         </div>
         <div class="form-group">
-            <label>Название услуги или категории</label>
-            <input type="text" id="newName" placeholder="Например: Укладка плитки">
+            <input type="password" id="passInput" placeholder="Пароль">
         </div>
-        <div class="form-group">
-            <label>Цена (оставьте пустым, если это категория)</label>
-            <input type="number" id="newPrice" placeholder="Например: 1000">
-        </div>
-        <button type="button" class="btn btn-success" onclick="addServiceItem()">➕ Добавить в прайс</button>
+        <button type="button" class="btn btn-primary" onclick="loginUser()">Войти</button>
     </div>
 
-    <div id="loader" class="loader">⏳ Загрузка прайса из облака...</div>
-    <div id="priceListContainer"></div>
+    <!-- Основной кабинет калькулятора -->
+    <div id="appBox" class="app-section">
+        <div class="user-bar">
+            <span id="userNameDisplay">👤 Мастер: <b>admin</b></span>
+            <button type="button" class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 13px;" onclick="logout()">Выйти</button>
+        </div>
+
+        <h2>📐 Калькулятор сметы</h2>
+        <div id="calcRows"></div>
+        
+        <button type="button" class="btn btn-success" style="margin-bottom: 15px;" onclick="addCalcRow()">➕ Добавить позицию</button>
+
+        <div class="total-box">
+            Итого: <span id="totalSum">0</span> ₽
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="saveCalculation()">💾 Сохранить расчёт в историю</button>
+
+        <h3 style="margin-top: 30px;">📜 История расчётов</h3>
+        <div id="historyContainer"></div>
+    </div>
 </div>
 
 <script>
@@ -85,15 +82,9 @@
 
     let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }], history: [] };
 
-    function escapeHtml(str) {
-        return String(str ?? '')
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        loadCloudData();
-        checkAdminAccess();
+    window.addEventListener('DOMContentLoaded', async () => {
+        await loadCloudData();
+        checkAuth();
     });
 
     async function loadCloudData() {
@@ -103,14 +94,8 @@
             });
             const data = await res.json();
             if (data.record) cloudData = data.record;
-            
-            const loader = document.getElementById('loader');
-            if (loader) loader.style.display = 'none';
-            renderPriceList();
         } catch (e) {
             console.error(e);
-            const loader = document.getElementById('loader');
-            if (loader) loader.innerText = '❌ Ошибка загрузки данных из облака.';
         }
     }
 
@@ -130,218 +115,122 @@
         }
     }
 
-    function checkAdminAccess() {
-        const currentUser = localStorage.getItem('currentUser');
-        const isAdmin = localStorage.getItem('isAdminAuthorized') === 'true';
-
-        if (currentUser) {
-            document.getElementById('loginNavBtn').textContent = `📐 Кабинет (${currentUser})`;
+    function checkAuth() {
+        const user = localStorage.getItem('currentUser');
+        if (user) {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('appBox').style.display = 'block';
+            document.getElementById('userNameDisplay').innerHTML = `👤 Мастер: <b>${user}</b>`;
+            if (document.getElementById('calcRows').children.length === 0) {
+                addCalcRow();
+            }
+            renderHistory();
         } else {
-            document.getElementById('loginNavBtn').textContent = '🔐 Вход для мастеров (Калькулятор)';
-        }
-
-        if (isAdmin) {
-            document.getElementById('adminPanel').style.display = 'block';
-        } else {
-            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('appBox').style.display = 'none';
         }
     }
 
-    function renderPriceList() {
-        const container = document.getElementById('priceListContainer');
+    function loginUser() {
+        const login = document.getElementById('loginInput').value.trim();
+        const pass = document.getElementById('passInput').value.trim();
+
+        if (!login || !pass) {
+            alert("Заполните логин и пароль!");
+            return;
+        }
+
+        const users = cloudData.users || [{ login: "admin", pass: "12345" }];
+        const found = users.find(u => u.login === login && u.pass === pass);
+
+        if (found) {
+            localStorage.setItem('currentUser', login);
+            if (login === 'admin') {
+                localStorage.setItem('isAdminAuthorized', 'true');
+            }
+            checkAuth();
+        } else {
+            alert("Неверный логин или пароль!");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('isAdminAuthorized');
+        checkAuth();
+    }
+
+    function addCalcRow() {
+        const container = document.getElementById('calcRows');
+        const row = document.createElement('div');
+        row.className = 'calc-item';
+
+        const services = (cloudData.services || []).filter(s => !s.isCategory);
+        let options = '<option value="0">-- Выберите услугу --</option>';
+        services.forEach(s => {
+            options += `<option value="${s.price}">${s.name} (${Number(s.price).toLocaleString('ru-RU')} ₽)</option>`;
+        });
+
+        row.innerHTML = `
+            <select onchange="calculateTotal()">${options}</select>
+            <input type="number" placeholder="Кол-во" min="1" value="1" oninput="calculateTotal()">
+            <button type="button" class="btn btn-danger" style="width: auto; padding: 8px 12px;" onclick="this.parentElement.remove(); calculateTotal();">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function calculateTotal() {
+        const rows = document.querySelectorAll('.calc-item');
+        let total = 0;
+
+        rows.forEach(row => {
+            const price = Number(row.querySelector('select').value || 0);
+            const qty = Number(row.querySelector('input').value || 0);
+            total += price * qty;
+        });
+
+        document.getElementById('totalSum').innerText = total.toLocaleString('ru-RU');
+        return total;
+    }
+
+    async function saveCalculation() {
+        const total = calculateTotal();
+        if (total === 0) {
+            alert("Добавьте хотя бы одну позицию с ценой!");
+            return;
+        }
+
+        const user = localStorage.getItem('currentUser') || 'Мастер';
+        const date = new Date().toLocaleString('ru-RU');
+
+        if (!cloudData.history) cloudData.history = [];
+        cloudData.history.unshift({ user, date, total });
+
+        await saveCloudData();
+        renderHistory();
+        alert("Расчёт успешно сохранён!");
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('historyContainer');
         if (!container) return;
         container.innerHTML = '';
-        
-        const services = cloudData.services || [];
-        const query = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
 
-        if (services.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#888;">Прайс-лист пока пуст</div>';
+        const history = cloudData.history || [];
+        if (history.length === 0) {
+            container.innerHTML = '<div style="color:#888;">История пока пуста</div>';
             return;
         }
 
-        const isAdmin = localStorage.getItem('isAdminAuthorized') === 'true';
-
-        services.forEach((srv, idx) => {
-            if (query && !srv.isCategory && srv.name && !srv.name.toLowerCase().includes(query)) {
-                return;
-            }
-
-            if (srv.isCategory) {
-                const cat = document.createElement('div');
-                cat.className = 'category-header';
-                let adminBtns = isAdmin ? `
-                    <div class="action-row">
-                        <button type="button" class="btn btn-success btn-sm" onclick="addServiceToCategory(${idx})" title="Добавить услугу в эту категорию">➕ Услуга</button>
-                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Редактировать категорию">✏️</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})" title="Удалить категорию">🗑</button>
-                    </div>
-                ` : '';
-                cat.innerHTML = `<span>📂 ${escapeHtml(srv.name)}</span>${adminBtns}`;
-                container.appendChild(cat);
-            } else {
-                const card = document.createElement('div');
-                card.className = 'service-card';
-                let adminBtns = isAdmin ? `
-                    <div class="action-row">
-                        <button type="button" class="btn btn-warning btn-sm" onclick="editServiceItem(${idx})" title="Редактировать услугу">✏️</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})" title="Удалить услугу">✕</button>
-                    </div>
-                ` : '';
-                card.innerHTML = `
-                    <div class="service-info">
-                        <div class="service-title">${escapeHtml(srv.name)}</div>
-                        <div class="service-price">${Number(srv.price || 0).toLocaleString('ru-RU')} ₽</div>
-                    </div>
-                    ${adminBtns}
-                `;
-                container.appendChild(card);
-            }
+        history.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div><b>Мастер:</b> ${item.user} | <b>Дата:</b> ${item.date}</div>
+                <div style="color:#28a745; font-weight:bold; margin-top:4px;">Сумма: ${Number(item.total).toLocaleString('ru-RU')} ₽</div>
+            `;
+            container.appendChild(card);
         });
-    }
-
-    async function addServiceItem() {
-        const name = document.getElementById('newName').value.trim();
-        const priceVal = document.getElementById('newPrice').value.trim();
-
-        if (!name) {
-            alert('Введите название!');
-            return;
-        }
-
-        const isCategory = priceVal === '';
-        let price = isCategory ? 0 : Number(priceVal);
-
-        if (!isCategory && (isNaN(price) || price < 0)) {
-            alert('Введите корректную стоимость!');
-            return;
-        }
-
-        if (!cloudData.services) cloudData.services = [];
-        cloudData.services.push({ name, price, isCategory });
-
-        await saveCloudData();
-        document.getElementById('newName').value = '';
-        document.getElementById('newPrice').value = '';
-        renderPriceList();
-        alert('Добавлено в прайс!');
-    }
-
-    async function addServiceToCategory(catIdx) {
-        const name = prompt("Наименование услуги:");
-        if (!name || name.trim() === "") return;
-
-        const priceStr = prompt("Цена услуги в ₽:");
-        if (priceStr === null) return;
-
-        const price = Number(priceStr.trim());
-        if (isNaN(price) || price < 0) {
-            alert("Укажите корректную стоимость!");
-            return;
-        }
-
-        let insertIdx = catIdx + 1;
-        while (insertIdx < cloudData.services.length && !cloudData.services[insertIdx].isCategory) {
-            insertIdx++;
-        }
-
-        cloudData.services.splice(insertIdx, 0, { name: name.trim(), price, isCategory: false });
-        await saveCloudData();
-        renderPriceList();
-    }
-
-    async function editServiceItem(idx) {
-        const srv = cloudData.services[idx];
-        if (!srv) return;
-
-        if (srv.isCategory) {
-            const newName = prompt("Введите новое название категории:", srv.name);
-            if (newName !== null && newName.trim() !== "") {
-                srv.name = newName.trim();
-                await saveCloudData();
-                renderPriceList();
-            }
-        } else {
-            const newName = prompt("Изменить название услуги:", srv.name);
-            if (newName === null || newName.trim() === "") return;
-
-            const newPriceStr = prompt("Изменить цену услуги (в ₽):", srv.price);
-            if (newPriceStr === null) return;
-
-            const newPrice = Number(newPriceStr.trim());
-            if (isNaN(newPrice) || newPrice < 0) {
-                alert("Укажите корректную стоимость!");
-                return;
-            }
-
-            srv.name = newName.trim();
-            srv.price = newPrice;
-            await saveCloudData();
-            renderPriceList();
-        }
-    }
-
-    async function generatePricePDF() {
-        const services = cloudData.services || [];
-        if (services.length === 0) {
-            alert("Прайс-лист пуст!");
-            return;
-        }
-
-        const element = document.createElement('div');
-        element.style.padding = '20px';
-        element.style.background = '#ffffff';
-        element.style.fontFamily = 'Arial, sans-serif';
-
-        let htmlContent = `
-            <h2 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top:0; text-align:center;">ПРАЙС-ЛИСТ УСЛУГ</h2>
-            <p style="text-align:center; font-size: 11px; color: #666; margin-bottom: 15px;">Актуально на: ${new Date().toLocaleDateString('ru-RU')}</p>
-            <div style="background-color: #eef7ff; border: 1px solid #bce0fd; padding: 12px; margin-bottom: 20px; font-size: 11px; color: #004085; line-height: 1.4; border-radius: 6px;">
-                <b>Правило расчёта погонных метров:</b><br>
-                Стоимость работ за погонный метр приравнивается к стоимости за квадратный метр. В погонных метрах измеряются откосы, примыкания, углы и декоративные элементы линейного типа. Если одна или несколько сторон элемента составляют менее одного метра, расчёт производится как за полный погонный метр.
-            </div>
-            <table style="width: 100%; border-collapse: collapse;">
-        `;
-
-        services.forEach(srv => {
-            if (srv.isCategory) {
-                htmlContent += `<tr><td colspan="2" style="background-color: #e9ecef; font-weight: bold; padding: 10px; border: 1px solid #ddd; font-size: 14px;">${escapeHtml(srv.name)}</td></tr>`;
-            } else {
-                htmlContent += `<tr><td style="border: 1px solid #ddd; padding: 8px; font-size: 13px;">${escapeHtml(srv.name)}</td><td style="border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: right; font-weight: bold; color: #28a745;">${Number(srv.price || 0).toLocaleString('ru-RU')} ₽</td></tr>`;
-            }
-        });
-
-        htmlContent += `</table>`;
-        element.innerHTML = htmlContent;
-
-        const opt = {
-            margin: 10,
-            filename: 'Prais_list_uslug.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        try {
-            const worker = html2pdf().from(element).set(opt);
-            const pdfBlob = await worker.outputPdf('blob');
-            const pdfFile = new File([pdfBlob], "Prais_list_uslug.pdf", { type: "application/pdf" });
-
-            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                await navigator.share({ files: [pdfFile], title: 'Прайс-лист услуг' });
-            } else {
-                worker.save();
-            }
-        } catch (error) {
-            html2pdf().from(element).set(opt).save();
-        }
-    }
-
-    async function deleteServiceItem(idx) {
-        if (!confirm("Удалить этот пункт из прайса?")) return;
-        cloudData.services.splice(idx, 1);
-        await saveCloudData();
-        renderPriceList();
     }
 </script>
 
