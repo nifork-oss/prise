@@ -59,10 +59,10 @@
 
         .loader { text-align: center; color: #007bff; font-weight: bold; padding: 20px; }
 
-        /* ИСПРАВЛЕНИЕ ДЛЯ ПЕЧАТИ PDF: корректная видимость для html2canvas на мобильных */
-        #printArea { position: fixed; top: 0; left: 0; width: 210mm; background: #fff; padding: 20px; opacity: 0; pointer-events: none; z-index: -9999; }
+        #printArea { position: fixed; left: -9999px; top: 0; width: 210mm; background: #fff; padding: 20px; opacity: 0; z-index: -9999; }
     </style>
 </head>
+``````html
 <body>
 
 <!-- ЭКРАН АВТОРИЗАЦИИ -->
@@ -353,22 +353,32 @@
 
         const element = document.getElementById('printArea');
 
+        // Временный показ блока для мобильного рендеринга
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.zIndex = '999999';
+        element.style.opacity = '1';
+
         const opt = {
             margin:       10,
             filename:     `Schet_${client || 'zakazchik'}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Делаем элемент видимым перед рендерингом PDF
-        element.style.opacity = '1';
-
         html2pdf().from(element).set(opt).save().then(() => {
+            element.style.position = 'fixed';
+            element.style.left = '-9999px';
             element.style.opacity = '0';
+            element.style.zIndex = '-9999';
         }).catch(err => {
             console.error("Ошибка генерации PDF:", err);
+            element.style.position = 'fixed';
+            element.style.left = '-9999px';
             element.style.opacity = '0';
+            element.style.zIndex = '-9999';
         });
     }
 
