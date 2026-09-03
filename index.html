@@ -15,7 +15,6 @@
         .nav-btn { display: flex; justify-content: center; align-items: center; text-decoration: none; background: #007bff; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,123,255,0.3); }
         .action-main-btn { background: #28a745; margin-bottom: 15px; border: none; cursor: pointer; color: white; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 2px 5px rgba(40,167,69,0.3); }
         
-        /* Стили для блока с правилом погонных метров на сайте */
         .info-box { background: #eef7ff; border: 1px solid #bce0fd; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; font-size: 13px; color: #004085; line-height: 1.4; }
         .info-box b { display: block; margin-bottom: 4px; font-size: 14px; color: #0056b3; }
 
@@ -25,7 +24,8 @@
         .service-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: #222; }
         .service-price { color: #28a745; font-weight: bold; font-size: 16px; white-space: nowrap; }
         .admin-controls { display: none; background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .admin-controls h3 { margin-top: 0; font-size: 16px; color: #856404; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .admin-controls h3 { margin: 0; font-size: 16px; color: #856404; }
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; font-weight: 500; }
         .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
@@ -53,7 +53,10 @@
 
     <!-- Панель управления для администратора -->
     <div id="adminPanel" class="admin-controls">
-        <h3>⚙️ Режим редактирования (Админ)</h3>
+        <div class="admin-header">
+            <h3>⚙️ Режим редактирования (Админ)</h3>
+            <button type="button" class="btn btn-danger btn-sm" onclick="logoutAdmin()">Выйти из админки</button>
+        </div>
         <div class="form-group">
             <label>Название услуги или категории</label>
             <input type="text" id="newName" placeholder="Например: Укладка плитки">
@@ -75,6 +78,15 @@
 
     let cloudData = { services: [], users: [{ login: "admin", pass: "12345" }], history: [] };
 
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         loadCloudData();
         checkAdminAccess();
@@ -88,6 +100,9 @@
             const data = await res.json();
             if (data.record) {
                 cloudData = data.record;
+                if (!cloudData.services || !Array.isArray(cloudData.services)) cloudData.services = [];
+                if (!cloudData.users || !Array.isArray(cloudData.users)) cloudData.users = [{ login: "admin", pass: "12345" }];
+                if (!cloudData.history || !Array.isArray(cloudData.history)) cloudData.history = [];
             }
             const loader = document.getElementById('loader');
             if (loader) loader.style.display = 'none';
@@ -122,6 +137,12 @@
         }
     }
 
+    function logoutAdmin() {
+        localStorage.removeItem('isAdminAuthorized');
+        document.getElementById('adminPanel').style.display = 'none';
+        renderPriceList();
+    }
+
     function renderPriceList() {
         const container = document.getElementById('priceListContainer');
         if (!container) return;
@@ -144,7 +165,7 @@
                         <button type="button" class="btn btn-danger btn-sm" onclick="deleteServiceItem(${idx})">Удалить</button>
                     </div>
                 ` : '';
-                cat.innerHTML = `<span>📂 ${srv.name}</span>${adminBtns}`;
+                cat.innerHTML = `<span>📂 ${escapeHtml(srv.name)}</span>${adminBtns}`;
                 container.appendChild(cat);
             } else {
                 const card = document.createElement('div');
@@ -156,7 +177,7 @@
                 ` : '';
                 card.innerHTML = `
                     <div class="service-info">
-                        <div class="service-title">${srv.name}</div>
+                        <div class="service-title">${escapeHtml(srv.name)}</div>
                         <div class="service-price">${Number(srv.price).toLocaleString('ru-RU')} ₽</div>
                     </div>
                     ${adminBtns}
@@ -196,14 +217,14 @@
                 htmlContent += `
                     <tr>
                         <td colspan="2" style="background-color: #e9ecef; font-weight: bold; padding: 10px; border: 1px solid #ddd; font-size: 14px; color: #333;">
-                            ${srv.name}
+                            ${escapeHtml(srv.name)}
                         </td>
                     </tr>
                 `;
             } else {
                 htmlContent += `
                     <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 13px;">${srv.name}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 13px;">${escapeHtml(srv.name)}</td>
                         <td style="border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: right; font-weight: bold; color: #28a745; width: 110px;">${Number(srv.price).toLocaleString('ru-RU')} ₽</td>
                     </tr>
                 `;
@@ -251,7 +272,15 @@
         }
 
         const isCategory = priceVal === '';
-        const price = isCategory ? 0 : Number(priceVal);
+        let price = 0;
+
+        if (!isCategory) {
+            price = Number(priceVal);
+            if (isNaN(price) || price < 0) {
+                alert('Введите корректную стоимость!');
+                return;
+            }
+        }
 
         if (!cloudData.services) cloudData.services = [];
         cloudData.services.push({ name, price, isCategory });
